@@ -52,7 +52,7 @@
     <div class="modal-content">
         <div class="modal-header">
             <h2>🤖 Спросить Hola AI</h2>
-            <span class="close">&times;</span>
+            <span class="close" onclick="closeModal()">&times;</span>
         </div>
         <div class="modal-body">
             <p id="modalPlaylistTitle"></p>
@@ -75,24 +75,40 @@ let currentPlaylistTitle = null;
 
 function togglePlaylistInfo(playlistId) {
     const panel = document.getElementById(`info-${playlistId}`);
-    if (panel.style.display === 'none') {
-        panel.style.display = 'block';
-    } else {
-        panel.style.display = 'none';
+    if (panel) {
+        if (panel.style.display === 'none' || !panel.style.display) {
+            panel.style.display = 'block';
+        } else {
+            panel.style.display = 'none';
+        }
     }
 }
 
 function askAboutPlaylist(playlistId, playlistTitle) {
     currentPlaylistId = playlistId;
     currentPlaylistTitle = playlistTitle;
-    document.getElementById('modalPlaylistTitle').innerHTML = `Плейлист: <strong>${playlistTitle}</strong>`;
-    document.getElementById('aiQuestion').value = '';
-    document.getElementById('aiResponse').style.display = 'none';
-    document.getElementById('aiModal').style.display = 'block';
+    const modalTitle = document.getElementById('modalPlaylistTitle');
+    if (modalTitle) {
+        modalTitle.innerHTML = `Плейлист: <strong>${playlistTitle}</strong>`;
+    }
+    const questionInput = document.getElementById('aiQuestion');
+    if (questionInput) {
+        questionInput.value = '';
+    }
+    const responseDiv = document.getElementById('aiResponse');
+    if (responseDiv) {
+        responseDiv.style.display = 'none';
+    }
+    const modal = document.getElementById('aiModal');
+    if (modal) {
+        modal.style.display = 'block';
+    }
 }
 
 async function sendAIQuestion() {
-    const question = document.getElementById('aiQuestion').value.trim();
+    const questionInput = document.getElementById('aiQuestion');
+    const question = questionInput ? questionInput.value.trim() : '';
+
     if (!question) {
         alert('Пожалуйста, введите вопрос');
         return;
@@ -101,8 +117,12 @@ async function sendAIQuestion() {
     const responseDiv = document.getElementById('aiResponse');
     const responseContent = document.getElementById('responseContent');
 
-    responseContent.innerHTML = '<div class="loading">⏳ Hola AI думает...</div>';
-    responseDiv.style.display = 'block';
+    if (responseContent) {
+        responseContent.innerHTML = '<div class="loading">⏳ Hola AI думает...</div>';
+    }
+    if (responseDiv) {
+        responseDiv.style.display = 'block';
+    }
 
     try {
         const res = await fetch(`/api/playlist/${currentPlaylistId}/ask`, {
@@ -114,22 +134,26 @@ async function sendAIQuestion() {
         });
 
         const data = await res.json();
-        if (data.response) {
-            responseContent.innerHTML = marked.parse(data.response);
-        } else if (data.error) {
-            responseContent.innerHTML = `<div class="error">❌ ${data.error}</div>`;
+        if (responseContent) {
+            if (data.response) {
+                responseContent.innerHTML = data.response.replace(/\n/g, '<br>');
+            } else if (data.error) {
+                responseContent.innerHTML = `<div class="error">❌ ${data.error}</div>`;
+            }
         }
     } catch (error) {
-        responseContent.innerHTML = '<div class="error">❌ Ошибка при отправке вопроса. Попробуйте позже.</div>';
+        if (responseContent) {
+            responseContent.innerHTML = '<div class="error">❌ Ошибка при отправке вопроса. Попробуйте позже.</div>';
+        }
     }
 }
 
 function closeModal() {
-    document.getElementById('aiModal').style.display = 'none';
+    const modal = document.getElementById('aiModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
 }
-
-// Закрытие модального окна при клике на X
-document.querySelector('.close').onclick = closeModal;
 
 // Закрытие при клике вне модального окна
 window.onclick = function(event) {

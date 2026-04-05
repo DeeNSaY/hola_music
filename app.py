@@ -6,12 +6,9 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from datetime import datetime
+import re
 
-from models import db, User, ChatHistory, UserPlaylistView
-from forms import RegistrationForm, LoginForm, ChatForm
-from vk_parser import vk_parser, PLAYLISTS
-from ai_rag import ai_system
-
+# Настройка логирования
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(levelname)s %(name)s %(message)s',
@@ -22,36 +19,29 @@ logger = logging.getLogger(__name__)
 # Загрузка переменных окружения
 load_dotenv()
 
-# Проверка наличия необходимых переменных
-required_vars = ['SECRET_KEY']
-missing_vars = [var for var in required_vars if not os.getenv(var)]
-if missing_vars:
-    logger.error(f"Missing required environment variables: {missing_vars}")
-    if os.getenv('RENDER'):
-        logger.error("Please add these variables in Render.com Environment Variables")
-
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'fallback-secret-key-change-in-production')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///hola.db')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'hola-secure-key-2025')
+
+# Настройка базы данных - поддержка PostgreSQL
+database_url = os.getenv('DATABASE_URL')
+if database_url and database_url.startswith('postgres://'):
+    # Render.com использует postgres://, но SQLAlchemy требует postgresql://
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    logger.info("Using PostgreSQL database")
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hola.db'
+    logger.info("Using SQLite database")
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Для продакшена на Render с PostgreSQL (если используешь)
-if os.getenv('DATABASE_URL') and 'postgres' in os.getenv('DATABASE_URL'):
-    import urllib.parse as urlparse
-    url = urlparse.urlparse(os.getenv('DATABASE_URL'))
-    app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{url.username}:{url.password}@{url.hostname}{url.path}"
+# Импорт моделей
+from models import db, User, ChatHistory, UserPlaylistView
 
-
-load_dotenv()
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'hola-secret-key-2025')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hola.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
+# Инициализация базы данных
 db.init_app(app)
+
+# Инициализация Login Manager
 login_manager = LoginManager()
 login_manager.login_view = 'login'
 login_manager.login_message = '🎵 Пожалуйста, войдите в аккаунт, чтобы использовать Hola AI!'
@@ -64,10 +54,15 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
-# Создание базы данных
+# Импорт других модулей
+from forms import RegistrationForm, LoginForm, ChatForm
+from vk_parser import vk_parser, PLAYLISTS
+from ai_rag import ai_system
+
+# Создание таблиц базы данных
 with app.app_context():
     db.create_all()
-    logger.info("✅ Database created successfully")
+    logger.info("✅ Database tables created successfully")
 
 
 # === Контекстный процессор для всех шаблонов ===
@@ -101,22 +96,26 @@ def playlist_detail(playlist_id):
 
     # Сохраняем просмотр если пользователь авторизован
     if current_user.is_authenticated:
-        view = UserPlaylistView.query.filter_by(
-            user_id=current_user.id,
-            playlist_id=playlist_id
-        ).first()
-
-        if view:
-            view.view_count += 1
-            view.last_viewed = datetime.utcnow()
-        else:
-            view = UserPlaylistView(
+        try:
+            view = UserPlaylistView.query.filter_by(
                 user_id=current_user.id,
-                playlist_id=playlist_id,
-                playlist_title=playlist_info['title']
-            )
-            db.session.add(view)
-        db.session.commit()
+                playlist_id=playlist_id
+            ).first()
+
+            if view:
+                view.view_count += 1
+                view.last_viewed = datetime.utcnow()
+            else:
+                view = UserPlaylistView(
+                    user_id=current_user.id,
+                    playlist_id=playlist_id,
+                    playlist_title=playlist_info['title']
+                )
+                db.session.add(view)
+            db.session.commit()
+        except Exception as e:
+            logger.error(f"Error saving playlist view: {e}")
+            db.session.rollback()
 
     return render_template('playlist_detail.html', playlist=playlist_info)
 
@@ -146,7 +145,6 @@ def track_detail(playlist_id, track_index):
 def ai_chat():
     """Страница чата с AI"""
     form = ChatForm()
-    # Получаем историю чатов пользователя
     chat_history = ChatHistory.query.filter_by(user_id=current_user.id) \
         .order_by(ChatHistory.timestamp).all()
     return render_template('ai_chat.html', form=form, chat_history=chat_history)
@@ -162,12 +160,10 @@ def faq():
 @login_required
 def profile():
     """Профиль пользователя"""
-    # Получаем историю чатов
     chat_history = ChatHistory.query.filter_by(user_id=current_user.id) \
         .order_by(ChatHistory.timestamp.desc()) \
-        .limit(20).all()
+        .limit(50).all()
 
-    # Получаем просмотренные плейлисты
     viewed_playlists = UserPlaylistView.query.filter_by(user_id=current_user.id) \
         .order_by(UserPlaylistView.last_viewed.desc()) \
         .limit(10).all()
@@ -204,7 +200,6 @@ def chat_api():
         # Получаем контекст плейлиста если есть
         context = None
         if playlist_context and playlist_context != 'general':
-            # Пытаемся получить информацию о плейлисте
             playlist_info = vk_parser.get_playlist_info(playlist_context)
             if playlist_info:
                 context = ai_system.build_playlist_context(playlist_info)
@@ -241,16 +236,8 @@ def chat_api():
 
     except Exception as e:
         logger.error(f"Chat API error: {e}")
+        db.session.rollback()
         return jsonify({'error': 'Произошла ошибка при обработке запроса'}), 500
-
-
-@app.route('/api/chat/history', methods=['GET'])
-@login_required
-def get_chat_history():
-    """Получить историю чатов пользователя"""
-    chat_history = ChatHistory.query.filter_by(user_id=current_user.id) \
-        .order_by(ChatHistory.timestamp).all()
-    return jsonify([chat.to_dict() for chat in chat_history])
 
 
 @app.route('/api/playlist/<playlist_id>/ask', methods=['POST'])
@@ -264,12 +251,10 @@ def ask_about_playlist(playlist_id):
         if not question:
             return jsonify({'error': 'Введите вопрос'}), 400
 
-        # Получаем информацию о плейлисте
         playlist_info = vk_parser.get_playlist_info(playlist_id)
         if not playlist_info:
             return jsonify({'error': 'Плейлист не найден'}), 404
 
-        # Создаем контекст
         context = ai_system.build_playlist_context(playlist_info)
 
         # Сохраняем вопрос
@@ -300,6 +285,7 @@ def ask_about_playlist(playlist_id):
 
     except Exception as e:
         logger.error(f"Playlist ask error: {e}")
+        db.session.rollback()
         return jsonify({'error': 'Ошибка при обработке вопроса'}), 500
 
 
@@ -312,29 +298,35 @@ def register():
 
     form = RegistrationForm()
     if form.validate_on_submit():
-        # Проверяем существование пользователя
-        existing_user = User.query.filter_by(email=form.email.data).first()
-        if existing_user:
-            flash('Пользователь с таким email уже существует', 'error')
-            return render_template('register.html', form=form)
+        try:
+            # Проверяем существование пользователя
+            existing_user = User.query.filter_by(email=form.email.data.lower()).first()
+            if existing_user:
+                flash('Пользователь с таким email уже существует', 'error')
+                return render_template('register.html', form=form)
 
-        existing_username = User.query.filter_by(username=form.username.data).first()
-        if existing_username:
-            flash('Пользователь с таким именем уже существует', 'error')
-            return render_template('register.html', form=form)
+            existing_username = User.query.filter_by(username=form.username.data).first()
+            if existing_username:
+                flash('Пользователь с таким именем уже существует', 'error')
+                return render_template('register.html', form=form)
 
-        hashed_password = generate_password_hash(form.password.data)
-        user = User(
-            username=form.username.data,
-            email=form.email.data,
-            password_hash=hashed_password
-        )
-        db.session.add(user)
-        db.session.commit()
+            hashed_password = generate_password_hash(form.password.data, method='pbkdf2:sha256')
+            user = User(
+                username=form.username.data,
+                email=form.email.data.lower(),
+                password_hash=hashed_password
+            )
+            db.session.add(user)
+            db.session.commit()
 
-        flash(f'🎉 Добро пожаловать, {user.username}! Регистрация прошла успешно.', 'success')
-        login_user(user)
-        return redirect(url_for('index'))
+            flash(f'🎉 Добро пожаловать, {user.username}! Регистрация прошла успешно.', 'success')
+            login_user(user)
+            return redirect(url_for('index'))
+
+        except Exception as e:
+            logger.error(f"Registration error: {e}")
+            db.session.rollback()
+            flash('Произошла ошибка при регистрации. Пожалуйста, попробуйте позже.', 'error')
 
     return render_template('register.html', form=form)
 
@@ -346,14 +338,18 @@ def login():
 
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
-        if user and check_password_hash(user.password_hash, form.password.data):
-            login_user(user)
-            flash(f'🎵 С возвращением, {user.username}!', 'success')
-            next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('index'))
-        else:
-            flash('Неверный email или пароль', 'error')
+        try:
+            user = User.query.filter_by(email=form.email.data.lower()).first()
+            if user and check_password_hash(user.password_hash, form.password.data):
+                login_user(user)
+                flash(f'🎵 С возвращением, {user.username}!', 'success')
+                next_page = request.args.get('next')
+                return redirect(next_page) if next_page else redirect(url_for('index'))
+            else:
+                flash('Неверный email или пароль', 'error')
+        except Exception as e:
+            logger.error(f"Login error: {e}")
+            flash('Произошла ошибка при входе. Пожалуйста, попробуйте позже.', 'error')
 
     return render_template('login.html', form=form)
 
@@ -380,4 +376,5 @@ def internal_error(error):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    port = int(os.getenv('PORT', 5000))
+    app.run(debug=False, host='0.0.0.0', port=port)

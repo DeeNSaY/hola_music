@@ -4,8 +4,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const flashMessages = document.querySelectorAll('.flash-message');
     flashMessages.forEach(message => {
         setTimeout(() => {
-            message.style.opacity = '0';
-            setTimeout(() => message.remove(), 300);
+            if (message && message.parentNode) {
+                message.style.opacity = '0';
+                setTimeout(() => {
+                    if (message && message.parentNode) message.remove();
+                }, 300);
+            }
         }, 5000);
 
         // Кнопка закрытия
@@ -13,7 +17,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (closeBtn) {
             closeBtn.addEventListener('click', () => {
                 message.style.opacity = '0';
-                setTimeout(() => message.remove(), 300);
+                setTimeout(() => {
+                    if (message && message.parentNode) message.remove();
+                }, 300);
             });
         }
     });
@@ -23,7 +29,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (mobileMenuBtn) {
         mobileMenuBtn.addEventListener('click', function() {
             const navLinks = document.querySelector('.nav-links');
-            navLinks.classList.toggle('show');
+            if (navLinks) {
+                navLinks.classList.toggle('show');
+            }
         });
     }
 
@@ -37,7 +45,44 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // Инициализация анимаций появления - ИСПРАВЛЕНО
+    initScrollAnimations();
 });
+
+// Функция инициализации анимаций при скролле
+function initScrollAnimations() {
+    const elements = document.querySelectorAll('.feature-card, .step, .chart-card, .advantage');
+
+    // Сразу показываем все элементы, чтобы они не исчезали
+    elements.forEach(el => {
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+    });
+
+    // Настройка Intersection Observer для дополнительных эффектов
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+
+    // Наблюдаем только за элементами с классом animate-on-scroll
+    document.querySelectorAll('.animate-on-scroll').forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+        el.style.transition = 'all 0.6s ease';
+        observer.observe(el);
+    });
+}
 
 // ===== Форматирование времени =====
 function formatTime(seconds) {
@@ -59,19 +104,18 @@ function debounce(func, wait) {
     };
 }
 
-// ===== Сохранение состояния темы =====
-const theme = localStorage.getItem('theme');
-if (theme === 'light') {
-    document.body.classList.add('light-theme');
-}
-
 // ===== Обработка ошибок на клиенте =====
 window.addEventListener('error', function(e) {
     console.error('Client Error:', e.error);
+    // Не показываем ошибки пользователю, только в консоль
 });
 
 // ===== Прогресс загрузки =====
 function showLoading() {
+    // Удаляем существующий лоадер если есть
+    const existingLoader = document.querySelector('.loading-overlay');
+    if (existingLoader) existingLoader.remove();
+
     const loader = document.createElement('div');
     loader.className = 'loading-overlay';
     loader.innerHTML = '<div class="spinner"></div>';
@@ -94,8 +138,12 @@ function showNotification(message, type = 'info') {
     document.body.appendChild(notification);
 
     setTimeout(() => {
-        notification.style.opacity = '0';
-        setTimeout(() => notification.remove(), 300);
+        if (notification && notification.parentNode) {
+            notification.style.opacity = '0';
+            setTimeout(() => {
+                if (notification && notification.parentNode) notification.remove();
+            }, 300);
+        }
     }, 3000);
 }
 
@@ -175,41 +223,6 @@ function exportChat() {
 
     showNotification('Чат экспортирован!', 'success');
 }
-
-// ===== Инициализация при загрузке страницы =====
-document.addEventListener('DOMContentLoaded', function() {
-    loadFavorites();
-
-    // Добавляем обработчик для поиска если есть поле поиска
-    const searchInput = document.getElementById('searchPlaylists');
-    if (searchInput) {
-        searchInput.addEventListener('input', debounce((e) => {
-            filterPlaylists(e.target.value);
-        }, 300));
-    }
-
-    // Анимация появления элементов при скролле
-    const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('visible');
-                observer.unobserve(entry.target);
-            }
-        });
-    }, observerOptions);
-
-    document.querySelectorAll('.feature-card, .step, .chart-card').forEach(el => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(20px)';
-        el.style.transition = 'all 0.6s ease';
-        observer.observe(el);
-    });
-});
 
 // ===== Обработка клавиатуры =====
 document.addEventListener('keydown', function(e) {
