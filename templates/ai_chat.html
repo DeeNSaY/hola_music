@@ -63,6 +63,42 @@ const chatMessages = document.getElementById('chatMessages');
 const userInput = document.getElementById('userInput');
 const sendBtn = document.getElementById('sendBtn');
 
+// Автоматически отправляем сохраненный вопрос из sessionStorage
+document.addEventListener('DOMContentLoaded', function() {
+    const savedQuestion = sessionStorage.getItem('ai_question');
+    const savedContext = sessionStorage.getItem('ai_context');
+
+    if (savedQuestion && !sessionStorage.getItem('question_sent')) {
+        // Отмечаем что вопрос уже отправлен
+        sessionStorage.setItem('question_sent', 'true');
+
+        // Добавляем контекст к вопросу если есть
+        let finalQuestion = savedQuestion;
+        if (savedContext) {
+            const context = JSON.parse(savedContext);
+            if (context.type === 'playlist') {
+                finalQuestion = `[Контекст: плейлист "${context.title}" из ${context.country}]\n\n${savedQuestion}`;
+            } else if (context.type === 'track') {
+                finalQuestion = `[Контекст: трек "${context.title}" - ${context.artist}, BPM: ${context.bpm}, тональность: ${context.key}]\n\n${savedQuestion}`;
+            }
+        }
+
+        // Устанавливаем вопрос в поле ввода
+        userInput.value = finalQuestion;
+
+        // Отправляем вопрос через секунду (чтобы страница полностью загрузилась)
+        setTimeout(() => {
+            sendMessage();
+            // Очищаем sessionStorage после отправки
+            setTimeout(() => {
+                sessionStorage.removeItem('ai_question');
+                sessionStorage.removeItem('ai_context');
+                sessionStorage.removeItem('question_sent');
+            }, 1000);
+        }, 500);
+    }
+});
+
 function setQuestion(question) {
     userInput.value = question;
     sendMessage();
@@ -87,13 +123,7 @@ function addMessage(content, isUser) {
 }
 
 function formatMessage(content) {
-    // Форматирование ссылок
-    content = content.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
-    // Форматирование жирного текста
     content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    // Форматирование списков
-    content = content.replace(/•/g, '•');
-    // Перенос строк
     content = content.replace(/\n/g, '<br>');
     return content;
 }
@@ -116,12 +146,10 @@ async function sendMessage() {
     const message = userInput.value.trim();
     if (!message) return;
 
-    // Добавляем сообщение пользователя
     addMessage(message, true);
     userInput.value = '';
     userInput.style.height = 'auto';
 
-    // Показываем индикатор печати
     showTypingIndicator();
 
     try {
@@ -146,17 +174,15 @@ async function sendMessage() {
         }
     } catch (error) {
         removeTypingIndicator();
-        addMessage('❌ Ошибка подключения к серверу. Пожалуйста, проверьте интернет-соединение.', false);
+        addMessage('❌ Ошибка подключения к серверу.', false);
     }
 }
 
-// Автоматическое изменение высоты textarea
 userInput.addEventListener('input', function() {
     this.style.height = 'auto';
     this.style.height = Math.min(this.scrollHeight, 150) + 'px';
 });
 
-// Отправка по Enter (без Shift)
 userInput.addEventListener('keypress', function(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -165,8 +191,6 @@ userInput.addEventListener('keypress', function(e) {
 });
 
 sendBtn.addEventListener('click', sendMessage);
-
-// Прокрутка вниз при загрузке
 chatMessages.scrollTop = chatMessages.scrollHeight;
 </script>
 {% endblock %}

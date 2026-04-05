@@ -5,14 +5,10 @@
 {% block content %}
 <div class="playlist-detail">
     <div class="playlist-header">
-        {% if playlist.cover %}
-        <img src="{{ playlist.cover }}" alt="{{ playlist.title }}" class="playlist-cover-large">
-        {% else %}
         <div class="playlist-icon-large">{{ playlist.icon }}</div>
-        {% endif %}
         <div class="playlist-info-large">
             <h1>{{ playlist.title }}</h1>
-            <p class="playlist-meta">{{ playlist.source }} • {{ playlist.country }} • {{ playlist.total_tracks }} треков</p>
+            <p class="playlist-meta">{{ playlist.country }} • {{ playlist.total_tracks }} треков</p>
             <p class="playlist-description">{{ playlist.description }}</p>
             <button class="btn btn-ai" onclick="askAboutPlaylist()">
                 🤖 Спросить AI об этом плейлисте
@@ -45,7 +41,7 @@
                     <a href="{{ url_for('track_detail', playlist_id=playlist.id, track_index=loop.index0) }}" class="btn btn-small">
                         🔍 Подробнее
                     </a>
-                    <button class="btn btn-small btn-ai" onclick="askAboutTrack('{{ track.title }}', '{{ track.artist }}')">
+                    <button class="btn btn-small btn-ai" onclick="askAboutTrack('{{ track.title }}', '{{ track.artist }}', '{{ track.bpm }}', '{{ track.key }}')">
                         🤖 Спросить AI
                     </button>
                 </div>
@@ -55,95 +51,32 @@
     </div>
 </div>
 
-<!-- Модальное окно для AI -->
-<div id="aiModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>🤖 Спросить Hola AI</h2>
-            <span class="close" onclick="closeModal()">&times;</span>
-        </div>
-        <div class="modal-body">
-            <div id="modalContext"></div>
-            <textarea id="aiQuestion" placeholder="Ваш вопрос..." rows="4"></textarea>
-            <div class="modal-buttons">
-                <button class="btn btn-primary" onclick="sendQuestion()">Отправить</button>
-                <button class="btn btn-secondary" onclick="closeModal()">Отмена</button>
-            </div>
-            <div id="aiResponse" class="ai-response" style="display: none;">
-                <h4>Ответ Hola AI:</h4>
-                <div id="responseContent"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
-let currentQuestionType = 'playlist';
-let currentTrackName = '';
-
 function askAboutPlaylist() {
-    currentQuestionType = 'playlist';
-    document.getElementById('modalContext').innerHTML = `<p>Плейлист: <strong>{{ playlist.title }}</strong></p>`;
-    document.getElementById('aiQuestion').value = 'Почему треки в этом плейлисте стали популярными? Расскажи об их BPM и тональности.';
-    document.getElementById('aiResponse').style.display = 'none';
-    document.getElementById('aiModal').style.display = 'block';
+    const question = `Расскажи подробно о плейлисте "{{ playlist.title }}". Почему треки в этом плейлисте стали популярными? Какие у них BPM, тональность и другие характеристики?`;
+    const context = {
+        type: 'playlist',
+        id: '{{ playlist.id }}',
+        title: '{{ playlist.title }}',
+        country: '{{ playlist.country }}'
+    };
+    sessionStorage.setItem('ai_question', question);
+    sessionStorage.setItem('ai_context', JSON.stringify(context));
+    window.location.href = "{{ url_for('ai_chat') }}";
 }
 
-function askAboutTrack(trackTitle, artist) {
-    currentQuestionType = 'track';
-    currentTrackName = trackTitle;
-    document.getElementById('modalContext').innerHTML = `<p>Трек: <strong>${trackTitle}</strong> - ${artist}</p>`;
-    document.getElementById('aiQuestion').value = `Расскажи подробно о треке "${trackTitle}". Почему он популярен? Какой у него BPM и тональность?`;
-    document.getElementById('aiResponse').style.display = 'none';
-    document.getElementById('aiModal').style.display = 'block';
-}
-
-async function sendQuestion() {
-    const question = document.getElementById('aiQuestion').value.trim();
-    if (!question) {
-        alert('Пожалуйста, введите вопрос');
-        return;
-    }
-
-    const responseDiv = document.getElementById('aiResponse');
-    const responseContent = document.getElementById('responseContent');
-
-    responseContent.innerHTML = '<div class="loading">⏳ Hola AI анализирует...</div>';
-    responseDiv.style.display = 'block';
-
-    let url = `/api/playlist/{{ playlist.id }}/ask`;
-
-    try {
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ question: question })
-        });
-
-        const data = await res.json();
-        if (data.response) {
-            responseContent.innerHTML = data.response.replace(/\n/g, '<br>');
-        } else if (data.error) {
-            responseContent.innerHTML = `<div class="error">❌ ${data.error}</div>`;
-        } else {
-            responseContent.innerHTML = '<div class="error">❌ Не удалось получить ответ от AI</div>';
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        responseContent.innerHTML = '<div class="error">❌ Ошибка при отправке вопроса. Попробуйте позже.</div>';
-    }
-}
-
-function closeModal() {
-    document.getElementById('aiModal').style.display = 'none';
-}
-
-document.querySelector('.close') && (document.querySelector('.close').onclick = closeModal);
-window.onclick = function(event) {
-    const modal = document.getElementById('aiModal');
-    if (event.target == modal) closeModal();
+function askAboutTrack(trackTitle, artist, bpm, key) {
+    const question = `Расскажи подробно о треке "${trackTitle}" от ${artist}. Почему он популярен? BPM: ${bpm}, тональность: ${key}. Что делает этот трек особенным?`;
+    const context = {
+        type: 'track',
+        title: trackTitle,
+        artist: artist,
+        bpm: bpm,
+        key: key
+    };
+    sessionStorage.setItem('ai_question', question);
+    sessionStorage.setItem('ai_context', JSON.stringify(context));
+    window.location.href = "{{ url_for('ai_chat') }}";
 }
 </script>
 {% endblock %}
