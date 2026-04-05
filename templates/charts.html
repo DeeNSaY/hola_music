@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Музыкальные чарты - Hola Music{% endblock %}
+
+{% block content %}
+<div class="charts-page">
+    <div class="page-header">
+        <h1>🎵 Музыкальные <span class="hola-green">Чарты</span></h1>
+        <p>Топ-100 треков из разных стран по версии VK Музыка</p>
+    </div>
+
+    <div class="charts-grid">
+        {% for playlist in playlists %}
+        <div class="chart-card" data-playlist-id="{{ playlist.id }}">
+            <div class="chart-card-header">
+                <div class="chart-icon">{{ playlist.icon }}</div>
+                <div class="chart-info">
+                    <h3>{{ playlist.title }}</h3>
+                    <p class="chart-source">{{ playlist.source }}</p>
+                    <p class="chart-country">{{ playlist.country }}</p>
+                </div>
+            </div>
+
+            <div class="chart-card-actions">
+                <button class="btn btn-info" onclick="togglePlaylistInfo('{{ playlist.id }}')">
+                    ℹ️ Информация
+                </button>
+                <a href="{{ url_for('playlist_detail', playlist_id=playlist.id) }}" class="btn btn-primary">
+                    🎵 Смотреть треки
+                </a>
+                <button class="btn btn-ai" onclick="askAboutPlaylist('{{ playlist.id }}', '{{ playlist.title }}')">
+                    🤖 Спросить AI
+                </button>
+            </div>
+
+            <div class="playlist-info-panel" id="info-{{ playlist.id }}" style="display: none;">
+                <div class="info-content">
+                    <h4>📊 О плейлисте</h4>
+                    <p>Еженедельно обновляемый чарт самых популярных треков в {{ playlist.country }}.</p>
+                    <p>Источник: {{ playlist.source }}</p>
+                    <p>Включает топ-100 треков на основе прослушиваний и лайков.</p>
+                    <button class="btn-close-info" onclick="togglePlaylistInfo('{{ playlist.id }}')">Закрыть</button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Модальное окно для AI вопроса -->
+<div id="aiModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>🤖 Спросить Hola AI</h2>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p id="modalPlaylistTitle"></p>
+            <textarea id="aiQuestion" placeholder="Например: Почему топ-5 треков в этом плейлисте стали популярными? Какие у них BPM и тональность?" rows="4"></textarea>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="sendAIQuestion()">Отправить</button>
+                <button class="btn btn-secondary" onclick="closeModal()">Отмена</button>
+            </div>
+            <div id="aiResponse" class="ai-response" style="display: none;">
+                <h4>Ответ Hola AI:</h4>
+                <div id="responseContent"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentPlaylistId = null;
+let currentPlaylistTitle = null;
+
+function togglePlaylistInfo(playlistId) {
+    const panel = document.getElementById(`info-${playlistId}`);
+    if (panel.style.display === 'none') {
+        panel.style.display = 'block';
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+function askAboutPlaylist(playlistId, playlistTitle) {
+    currentPlaylistId = playlistId;
+    currentPlaylistTitle = playlistTitle;
+    document.getElementById('modalPlaylistTitle').innerHTML = `Плейлист: <strong>${playlistTitle}</strong>`;
+    document.getElementById('aiQuestion').value = '';
+    document.getElementById('aiResponse').style.display = 'none';
+    document.getElementById('aiModal').style.display = 'block';
+}
+
+async function sendAIQuestion() {
+    const question = document.getElementById('aiQuestion').value.trim();
+    if (!question) {
+        alert('Пожалуйста, введите вопрос');
+        return;
+    }
+
+    const responseDiv = document.getElementById('aiResponse');
+    const responseContent = document.getElementById('responseContent');
+
+    responseContent.innerHTML = '<div class="loading">⏳ Hola AI думает...</div>';
+    responseDiv.style.display = 'block';
+
+    try {
+        const res = await fetch(`/api/playlist/${currentPlaylistId}/ask`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ question: question })
+        });
+
+        const data = await res.json();
+        if (data.response) {
+            responseContent.innerHTML = marked.parse(data.response);
+        } else if (data.error) {
+            responseContent.innerHTML = `<div class="error">❌ ${data.error}</div>`;
+        }
+    } catch (error) {
+        responseContent.innerHTML = '<div class="error">❌ Ошибка при отправке вопроса. Попробуйте позже.</div>';
+    }
+}
+
+function closeModal() {
+    document.getElementById('aiModal').style.display = 'none';
+}
+
+// Закрытие модального окна при клике на X
+document.querySelector('.close').onclick = closeModal;
+
+// Закрытие при клике вне модального окна
+window.onclick = function(event) {
+    const modal = document.getElementById('aiModal');
+    if (event.target == modal) {
+        closeModal();
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Профиль - Hola Music{% endblock %}
+
+{% block content %}
+<div class="profile-page">
+    <div class="profile-header">
+        <div class="profile-avatar">
+            <div class="avatar-circle" style="background-color: {{ current_user.avatar_color }}">
+                {{ current_user.username[0].upper() }}
+            </div>
+        </div>
+        <div class="profile-info">
+            <h1>{{ current_user.username }}</h1>
+            <p class="profile-email">{{ current_user.email }}</p>
+            <p class="profile-meta">🎵 Участник с {{ current_user.created_at.strftime('%B %Y') }}</p>
+        </div>
+    </div>
+
+    <div class="profile-stats">
+        <div class="stat-card">
+            <div class="stat-value">{{ chat_history|length }}</div>
+            <div class="stat-label">Сообщений AI</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ viewed_playlists|length }}</div>
+            <div class="stat-label">Просмотрено плейлистов</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{% if chat_history %}{{ (chat_history|length / 2)|int }}{% else %}0{% endif %}</div>
+            <div class="stat-label">Диалогов с AI</div>
+        </div>
+    </div>
+
+    <div class="profile-sections">
+        <div class="profile-section">
+            <h2>🎵 Часто просматриваемые плейлисты</h2>
+            {% if viewed_playlists %}
+                <div class="playlist-list">
+                    {% for playlist in viewed_playlists %}
+                    <div class="playlist-item">
+                        <div class="playlist-icon">📀</div>
+                        <div class="playlist-info">
+                            <a href="{{ url_for('playlist_detail', playlist_id=playlist.playlist_id) }}" class="playlist-title">
+                                {{ playlist.playlist_title }}
+                            </a>
+                            <div class="playlist-meta">
+                                <span>👁️ {{ playlist.view_count }} просмотров</span>
+                                <span>🕐 {{ playlist.last_viewed.strftime('%d.%m.%Y') }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-state">Вы ещё не просматривали плейлисты. <a href="{{ url_for('charts') }}">Начните исследовать чарты →</a></p>
+            {% endif %}
+        </div>
+
+        <div class="profile-section">
+            <h2>💬 История чатов с Hola AI</h2>
+            {% if chat_history %}
+                <div class="chat-history">
+                    {% for chat in chat_history[:20] %}
+                        <div class="history-item">
+                            <div class="history-header">
+                                <span class="history-role {% if chat.role == 'user' %}user-badge{% else %}ai-badge{% endif %}">
+                                    {% if chat.role == 'user' %}👤 Вы{% else %}🤖 Hola AI{% endif %}
+                                </span>
+                                <span class="history-time">{{ chat.timestamp.strftime('%d.%m.%Y %H:%M') }}</span>
+                            </div>
+                            <div class="history-content">
+                                {{ chat.content[:200] }}{% if chat.content|length > 200 %}...{% endif %}
+                            </div>
+                            {% if chat.playlist_context and chat.playlist_context != 'general' %}
+                                <div class="history-context">
+                                    📌 Контекст: {{ chat.playlist_context }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+                {% if chat_history|length > 20 %}
+                    <button class="btn btn-secondary" id="showMoreBtn">Показать больше</button>
+                {% endif %}
+            {% else %}
+                <p class="empty-state">У вас пока нет диалогов с AI. <a href="{{ url_for('ai_chat') }}">Начните общение →</a></p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+let showingMore = false;
+document.getElementById('showMoreBtn')?.addEventListener('click', function() {
+    const hiddenItems = document.querySelectorAll('.history-item.hidden');
+    hiddenItems.forEach(item => item.classList.remove('hidden'));
+    this.style.display = 'none';
+});
+</script>
+{% endblock %}

@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}{{ playlist.title }} - Hola Music{% endblock %}
+
+{% block content %}
+<div class="playlist-detail">
+    <div class="playlist-header">
+        <div class="playlist-icon-large">{{ playlist.icon }}</div>
+        <div class="playlist-info-large">
+            <h1>{{ playlist.title }}</h1>
+            <p class="playlist-meta">{{ playlist.source }} • {{ playlist.country }} • {{ playlist.total_tracks }} треков</p>
+            <p class="playlist-description">{{ playlist.description }}</p>
+            <button class="btn btn-ai" onclick="askAboutPlaylist()">
+                🤖 Спросить AI об этом плейлисте
+            </button>
+        </div>
+    </div>
+
+    <div class="tracks-section">
+        <h2>🎵 Список треков</h2>
+        <div class="tracks-list">
+            {% for track in playlist.tracks %}
+            <div class="track-item">
+                <div class="track-number">{{ loop.index }}</div>
+                <div class="track-info">
+                    <div class="track-title">{{ track.title }}</div>
+                    <div class="track-artist">{{ track.artist }}</div>
+                    <div class="track-meta">
+                        <span>🎵 BPM: {{ track.bpm }}</span>
+                        <span>🎹 Тональность: {{ track.key }}</span>
+                        <span>⭐ Популярность: {{ track.popularity }}/100</span>
+                        <span>⏱️ {{ (track.duration // 60) }}:{{ "%02d" % (track.duration % 60) }}</span>
+                    </div>
+                </div>
+                <div class="track-actions">
+                    <a href="{{ url_for('track_detail', playlist_id=playlist.id, track_index=loop.index0) }}" class="btn btn-small">
+                        🔍 Подробнее
+                    </a>
+                    <button class="btn btn-small btn-ai" onclick="askAboutTrack('{{ track.title }}', '{{ track.artist }}')">
+                        🤖 Спросить AI
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для AI -->
+<div id="aiModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>🤖 Спросить Hola AI</h2>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="modalContext"></div>
+            <textarea id="aiQuestion" placeholder="Ваш вопрос..." rows="4"></textarea>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="sendQuestion()">Отправить</button>
+                <button class="btn btn-secondary" onclick="closeModal()">Отмена</button>
+            </div>
+            <div id="aiResponse" class="ai-response" style="display: none;">
+                <h4>Ответ Hola AI:</h4>
+                <div id="responseContent"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentQuestionType = 'playlist';
+let currentTrackName = '';
+
+function askAboutPlaylist() {
+    currentQuestionType = 'playlist';
+    document.getElementById('modalContext').innerHTML = `<p>Плейлист: <strong>{{ playlist.title }}</strong></p>`;
+    document.getElementById('aiQuestion').value = 'Почему треки в этом плейлисте стали популярными? Расскажи об их BPM и тональности.';
+    document.getElementById('aiResponse').style.display = 'none';
+    document.getElementById('aiModal').style.display = 'block';
+}
+
+function askAboutTrack(trackTitle, artist) {
+    currentQuestionType = 'track';
+    currentTrackName = trackTitle;
+    document.getElementById('modalContext').innerHTML = `<p>Трек: <strong>${trackTitle}</strong> - ${artist}</p>`;
+    document.getElementById('aiQuestion').value = `Расскажи подробно о треке "${trackTitle}". Почему он популярен? Какой у него BPM и тональность?`;
+    document.getElementById('aiResponse').style.display = 'none';
+    document.getElementById('aiModal').style.display = 'block';
+}
+
+async function sendQuestion() {
+    const question = document.getElementById('aiQuestion').value.trim();
+    if (!question) {
+        alert('Пожалуйста, введите вопрос');
+        return;
+    }
+
+    const responseDiv = document.getElementById('aiResponse');
+    const responseContent = document.getElementById('responseContent');
+
+    responseContent.innerHTML = '<div class="loading">⏳ Hola AI анализирует...</div>';
+    responseDiv.style.display = 'block';
+
+    let url = `/api/playlist/{{ playlist.id }}/ask`;
+    if (currentQuestionType === 'track') {
+        url = `/api/chat`;
+    }
+
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                question: question,
+                message: question,
+                playlist_context: '{{ playlist.id }}'
+            })
+        });
+
+        const data = await res.json();
+        if (data.response) {
+            responseContent.innerHTML = formatResponse(data.response);
+        } else if (data.error) {
+            responseContent.innerHTML = `<div class="error">❌ ${data.error}</div>`;
+        }
+    } catch (error) {
+        responseContent.innerHTML = '<div class="error">❌ Ошибка при отправке вопроса</div>';
+    }
+}
+
+function formatResponse(text) {
+    // Простое форматирование
+    return text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+}
+
+function closeModal() {
+    document.getElementById('aiModal').style.display = 'none';
+}
+
+document.querySelector('.close').onclick = closeModal;
+window.onclick = function(event) {
+    const modal = document.getElementById('aiModal');
+    if (event.target == modal) closeModal();
+}
+</script>
+{% endblock %}

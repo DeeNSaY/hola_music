@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Hola AI - Чат с нейросетью{% endblock %}
+
+{% block content %}
+<div class="ai-chat-page">
+    <div class="chat-header">
+        <div class="chat-logo">
+            <span class="logo-emoji">🤖</span>
+            <h1>Hola <span class="hola-green">AI</span></h1>
+        </div>
+        <p class="chat-subtitle">Чем вам помочь? Задайте любой вопрос о музыке!</p>
+    </div>
+
+    <div class="chat-container">
+        <div class="chat-messages" id="chatMessages">
+            {% if chat_history %}
+                {% for chat in chat_history %}
+                    <div class="message {% if chat.role == 'user' %}user-message{% else %}ai-message{% endif %}">
+                        <div class="message-content">{{ chat.content }}</div>
+                        <div class="message-time">{{ chat.timestamp.strftime('%H:%M') }}</div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="welcome-message">
+                    <div class="welcome-icon">🎵</div>
+                    <h3>Добро пожаловать в Hola AI!</h3>
+                    <p>Я могу помочь вам разобраться в музыке. Вот что я умею:</p>
+                    <ul>
+                        <li>📊 Анализировать популярность треков</li>
+                        <li>🎵 Объяснять BPM, тональность и структуру песен</li>
+                        <li>🌍 Рассказывать о музыкальных трендах разных стран</li>
+                        <li>💡 Давать рекомендации на основе ваших предпочтений</li>
+                    </ul>
+                    <p>Попробуйте спросить меня:</p>
+                    <div class="example-questions">
+                        <button class="example-btn" onclick="setQuestion('Почему треки с высоким BPM часто становятся популярными?')">🎯 Почему высокий BPM популярен?</button>
+                        <button class="example-btn" onclick="setQuestion('Как тональность влияет на настроение песни?')">🎹 Влияние тональности</button>
+                        <button class="example-btn" onclick="setQuestion('Расскажи о музыкальных трендах в Казахстане')">🇰🇿 Тренды Казахстана</button>
+                        <button class="example-btn" onclick="setQuestion('Как определить энергичность трека?')">⚡ Энергия трека</button>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="chat-input-area">
+            <div class="chat-input-wrapper">
+                <textarea id="userInput" placeholder="Напишите ваш вопрос здесь... (Enter - отправить, Shift+Enter - новая строка)" rows="3"></textarea>
+                <button id="sendBtn" class="btn btn-primary">
+                    <span>📤</span> Отправить
+                </button>
+            </div>
+            <div class="chat-info">
+                <span>🤖 Hola AI на базе DeepSeek</span>
+                <span>💬 История чата сохраняется</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const chatMessages = document.getElementById('chatMessages');
+const userInput = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+
+function setQuestion(question) {
+    userInput.value = question;
+    sendMessage();
+}
+
+function addMessage(content, isUser) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${isUser ? 'user-message' : 'ai-message'}`;
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+    contentDiv.innerHTML = formatMessage(content);
+
+    const timeDiv = document.createElement('div');
+    timeDiv.className = 'message-time';
+    timeDiv.textContent = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+    messageDiv.appendChild(contentDiv);
+    messageDiv.appendChild(timeDiv);
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function formatMessage(content) {
+    // Форматирование ссылок
+    content = content.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
+    // Форматирование жирного текста
+    content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    // Форматирование списков
+    content = content.replace(/•/g, '•');
+    // Перенос строк
+    content = content.replace(/\n/g, '<br>');
+    return content;
+}
+
+function showTypingIndicator() {
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'message ai-message typing-indicator';
+    typingDiv.id = 'typingIndicator';
+    typingDiv.innerHTML = '<div class="message-content"><span>Hola AI печатает</span><span class="dots">...</span></div>';
+    chatMessages.appendChild(typingDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function removeTypingIndicator() {
+    const indicator = document.getElementById('typingIndicator');
+    if (indicator) indicator.remove();
+}
+
+async function sendMessage() {
+    const message = userInput.value.trim();
+    if (!message) return;
+
+    // Добавляем сообщение пользователя
+    addMessage(message, true);
+    userInput.value = '';
+    userInput.style.height = 'auto';
+
+    // Показываем индикатор печати
+    showTypingIndicator();
+
+    try {
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message: message,
+                playlist_context: 'general'
+            })
+        });
+
+        const data = await response.json();
+        removeTypingIndicator();
+
+        if (data.response) {
+            addMessage(data.response, false);
+        } else if (data.error) {
+            addMessage(`❌ ${data.error}`, false);
+        }
+    } catch (error) {
+        removeTypingIndicator();
+        addMessage('❌ Ошибка подключения к серверу. Пожалуйста, проверьте интернет-соединение.', false);
+    }
+}
+
+// Автоматическое изменение высоты textarea
+userInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+});
+
+// Отправка по Enter (без Shift)
+userInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
+});
+
+sendBtn.addEventListener('click', sendMessage);
+
+// Прокрутка вниз при загрузке
+chatMessages.scrollTop = chatMessages.scrollHeight;
+</script>
+{% endblock %}

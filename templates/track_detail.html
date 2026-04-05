@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}{{ track.title }} - {{ track.artist }} | Hola Music{% endblock %}
+
+{% block content %}
+<div class="track-detail">
+    <div class="track-header">
+        <div class="track-artwork">
+            <div class="artwork-placeholder">🎵</div>
+        </div>
+        <div class="track-header-info">
+            <h1>{{ track.title }}</h1>
+            <h2>{{ track.artist }}</h2>
+            <div class="track-metrics">
+                <div class="metric">
+                    <span class="metric-label">BPM</span>
+                    <span class="metric-value">{{ analysis.bpm }}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Тональность</span>
+                    <span class="metric-value">{{ analysis.key }}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Длительность</span>
+                    <span class="metric-value">{{ analysis.duration }}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Популярность</span>
+                    <span class="metric-value">{{ analysis.popularity }}/100</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="track-analysis">
+        <h3>🎸 Анализ трека</h3>
+        <div class="analysis-grid">
+            <div class="analysis-card">
+                <div class="analysis-icon">⚡</div>
+                <div>
+                    <h4>Энергия</h4>
+                    <p>{{ analysis.energy_level }}</p>
+                </div>
+            </div>
+            <div class="analysis-card">
+                <div class="analysis-icon">🎭</div>
+                <div>
+                    <h4>Настроение</h4>
+                    <p>{{ analysis.mood }}</p>
+                </div>
+            </div>
+            <div class="analysis-card">
+                <div class="analysis-icon">🎵</div>
+                <div>
+                    <h4>Жанр</h4>
+                    <p>{{ analysis.genre_hint }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="track-lyrics">
+        <h3>📝 Текст песни</h3>
+        <div class="lyrics-content">
+            {{ lyrics|replace('\n', '<br>')|safe }}
+        </div>
+    </div>
+
+    <div class="track-actions">
+        <button class="btn btn-ai" onclick="askAboutTrack()">
+            🤖 Спросить Hola AI об этом треке
+        </button>
+        <a href="{{ url_for('playlist_detail', playlist_id=playlist.id) }}" class="btn btn-secondary">
+            ← Вернуться к плейлисту
+        </a>
+    </div>
+</div>
+
+<!-- Модальное окно для AI -->
+<div id="aiModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>🤖 Hola AI - анализ трека</h2>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="track-context">
+                <p><strong>{{ track.title }}</strong> - {{ track.artist }}</p>
+            </div>
+            <textarea id="aiQuestion" rows="4" placeholder="Ваш вопрос о треке..."></textarea>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="sendQuestion()">Отправить</button>
+                <button class="btn btn-secondary" onclick="closeModal()">Отмена</button>
+            </div>
+            <div id="aiResponse" style="display: none;">
+                <h4>Ответ AI:</h4>
+                <div id="responseContent"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function askAboutTrack() {
+    document.getElementById('aiQuestion').value = `Расскажи подробно о треке "${track.title}". Почему он стал популярным? Что делает его особенным?`;
+    document.getElementById('aiResponse').style.display = 'none';
+    document.getElementById('aiModal').style.display = 'block';
+}
+
+async function sendQuestion() {
+    const question = document.getElementById('aiQuestion').value.trim();
+    if (!question) {
+        alert('Введите вопрос');
+        return;
+    }
+
+    const responseDiv = document.getElementById('aiResponse');
+    const responseContent = document.getElementById('responseContent');
+
+    responseDiv.style.display = 'block';
+    responseContent.innerHTML = '<div class="loading">⏳ Анализируем...</div>';
+
+    const trackContext = `Трек: ${track.title} - ${track.artist}. BPM: {{ analysis.bpm }}, Тональность: {{ analysis.key }}, Энергия: {{ analysis.energy_level }}, Настроение: {{ analysis.mood }}`;
+
+    try {
+        const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: `${question}\n\nКонтекст: ${trackContext}`,
+                playlist_context: '{{ playlist.id }}'
+            })
+        });
+
+        const data = await res.json();
+        responseContent.innerHTML = data.response.replace(/\n/g, '<br>');
+    } catch (error) {
+        responseContent.innerHTML = '❌ Ошибка при получении ответа';
+    }
+}
+
+function closeModal() {
+    document.getElementById('aiModal').style.display = 'none';
+}
+
+document.querySelector('.close').onclick = closeModal;
+</script>
+{% endblock %}

@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}FAQ - Hola Music{% endblock %}
+
+{% block content %}
+<div class="faq-page">
+    <div class="page-header">
+        <h1>❓ Часто задаваемые <span class="hola-green">вопросы</span></h1>
+        <p>Всё, что вы хотели знать о Hola Music</p>
+    </div>
+
+    <div class="faq-container">
+        <div class="faq-category">
+            <h2>🎵 О сервисе</h2>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Что такое Hola Music?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Hola Music - это инновационный сервис для анализа музыкальных чартов с использованием искусственного интеллекта. Мы собираем топ-100 треков из VK Музыки разных стран и предоставляем глубокий анализ каждого трека через нейросеть DeepSeek.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Откуда берутся данные о треках?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Данные поступают из VK Музыки через официальный API. Мы получаем информацию о треках, включая название, исполнителя, длительность, а также анализируем BPM, тональность и другие характеристики.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Как часто обновляются чарты?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Чарты обновляются ежедневно, чтобы вы всегда видели актуальную информацию о самых популярных треках в каждой стране.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-category">
+            <h2>🤖 Hola AI</h2>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Что умеет Hola AI?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <ul>
+                        <li>📊 Анализировать популярность треков на основе BPM, тональности и структуры</li>
+                        <li>🎵 Объяснять музыкальные термины простым языком</li>
+                        <li>🌍 Рассказывать о музыкальных трендах в разных странах</li>
+                        <li>💡 Давать персонализированные рекомендации</li>
+                        <li>📝 Помогать понять тексты песен</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Какая нейросеть используется?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Мы используем DeepSeek API - мощную нейросеть, специализирующуюся на анализе данных. Она обучена на большом количестве музыкальной информации и может давать экспертные ответы.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-category">
+            <h2>🔧 Технические вопросы</h2>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Как зарегистрироваться?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Нажмите на кнопку "Войти" в правом верхнем углу, затем выберите "Зарегистрироваться". Укажите имя пользователя, email и пароль - и вы станете частью Hola Music!</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Безопасны ли мои данные?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Да! Все пароли хранятся в зашифрованном виде, а история чатов доступна только вам. Мы не передаём ваши данные третьим лицам.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Как использовать API?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Для разработчиков: наш API доступен по эндпоинтам /api/chat и /api/playlist/{id}/ask. Для получения доступа свяжитесь с нами через GitHub.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-category">
+            <h2>💡 Советы по использованию</h2>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Какие вопросы лучше всего задавать AI?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Вот несколько примеров отличных вопросов:</p>
+                    <ul>
+                        <li>"Почему треки с BPM 120-130 часто становятся хитами?"</li>
+                        <li>"Как минорная тональность влияет на восприятие песни?"</li>
+                        <li>"Сравни популярные треки в России и Казахстане"</li>
+                        <li>"Какие музыкальные тренды сейчас актуальны?"</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleFAQ(element) {
+    const faqItem = element.parentElement;
+    const answer = faqItem.querySelector('.faq-answer');
+    const icon = element.querySelector('.faq-icon');
+
+    if (answer.style.display === 'none' || !answer.style.display) {
+        answer.style.display = 'block';
+        icon.style.transform = 'rotate(0deg)';
+    } else {
+        answer.style.display = 'none';
+        icon.style.transform = 'rotate(-90deg)';
+    }
+}
+
+// Инициализация: скрываем все ответы
+document.querySelectorAll('.faq-answer').forEach(answer => {
+    answer.style.display = 'none';
+});
+</script>
+{% endblock %}
