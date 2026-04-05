@@ -1,15 +1,46 @@
 import os
+import sys
+import logging
 from flask import Flask, render_template, redirect, url_for, request, jsonify, session, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
-import logging
 from datetime import datetime
 
 from models import db, User, ChatHistory, UserPlaylistView
 from forms import RegistrationForm, LoginForm, ChatForm
 from vk_parser import vk_parser, PLAYLISTS
 from ai_rag import ai_system
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s %(name)s %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+logger = logging.getLogger(__name__)
+
+# Загрузка переменных окружения
+load_dotenv()
+
+# Проверка наличия необходимых переменных
+required_vars = ['SECRET_KEY']
+missing_vars = [var for var in required_vars if not os.getenv(var)]
+if missing_vars:
+    logger.error(f"Missing required environment variables: {missing_vars}")
+    if os.getenv('RENDER'):
+        logger.error("Please add these variables in Render.com Environment Variables")
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'fallback-secret-key-change-in-production')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///hola.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Для продакшена на Render с PostgreSQL (если используешь)
+if os.getenv('DATABASE_URL') and 'postgres' in os.getenv('DATABASE_URL'):
+    import urllib.parse as urlparse
+    url = urlparse.urlparse(os.getenv('DATABASE_URL'))
+    app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{url.username}:{url.password}@{url.hostname}{url.path}"
+
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
