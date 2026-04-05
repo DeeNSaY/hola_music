@@ -13,7 +13,11 @@
         {% for playlist in playlists %}
         <div class="chart-card" data-playlist-id="{{ playlist.id }}">
             <div class="chart-card-header">
+                {% if playlist.cover %}
+                <img src="{{ playlist.cover }}" alt="{{ playlist.title }}" class="chart-cover">
+                {% else %}
                 <div class="chart-icon">{{ playlist.icon }}</div>
+                {% endif %}
                 <div class="chart-info">
                     <h3>{{ playlist.title }}</h3>
                     <p class="chart-source">{{ playlist.source }}</p>
@@ -139,9 +143,12 @@ async function sendAIQuestion() {
                 responseContent.innerHTML = data.response.replace(/\n/g, '<br>');
             } else if (data.error) {
                 responseContent.innerHTML = `<div class="error">❌ ${data.error}</div>`;
+            } else {
+                responseContent.innerHTML = '<div class="error">❌ Не удалось получить ответ от AI</div>';
             }
         }
     } catch (error) {
+        console.error('Error:', error);
         if (responseContent) {
             responseContent.innerHTML = '<div class="error">❌ Ошибка при отправке вопроса. Попробуйте позже.</div>';
         }
@@ -155,7 +162,6 @@ function closeModal() {
     }
 }
 
-// Закрытие при клике вне модального окна
 window.onclick = function(event) {
     const modal = document.getElementById('aiModal');
     if (event.target == modal) {

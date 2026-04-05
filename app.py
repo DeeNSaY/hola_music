@@ -8,6 +8,12 @@ from dotenv import load_dotenv
 from datetime import datetime
 import re
 
+
+DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')
+if not DEEPSEEK_API_KEY:
+    logger.warning("⚠️ DEEPSEEK_API_KEY not set! AI features will not work.")
+else:
+    logger.info("✅ DeepSeek API key configured")
 # Настройка логирования
 logging.basicConfig(
     level=logging.INFO,

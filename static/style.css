@@ -1080,3 +1080,182 @@ body {
         text-align: center;
     }
 }
+
+/* ===== ОБЛОЖКИ ПЛЕЙЛИСТОВ ===== */
+.chart-card-header {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.chart-cover {
+    width: 80px;
+    height: 80px;
+    border-radius: 12px;
+    object-fit: cover;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.chart-icon {
+    font-size: 3rem;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #282828, #1a1a1a);
+    border-radius: 12px;
+}
+
+/* ===== ОБЛОЖКИ ТРЕКОВ ===== */
+.track-cover {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    object-fit: cover;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.track-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background-color: var(--spotify-card-bg);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.track-cover-wrapper {
+    flex-shrink: 0;
+}
+
+/* ===== КНОПКИ В ЧАРТАХ (фикс вылезания) ===== */
+.chart-card-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+}
+
+.chart-card-actions .btn {
+    flex: 1;
+    min-width: 0;
+    justify-content: center;
+    font-size: 0.875rem;
+    padding: 0.6rem 0.8rem;
+    white-space: nowrap;
+}
+
+@media (max-width: 500px) {
+    .chart-card-actions .btn {
+        white-space: normal;
+        font-size: 0.75rem;
+        padding: 0.5rem;
+    }
+
+    .chart-card-actions {
+        gap: 0.5rem;
+    }
+}
+
+/* ===== КНОПКА AI ===== */
+.btn-ai {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+}
+
+.btn-ai:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* ===== ОБЛОЖКА ТРЕКА НА СТРАНИЦЕ ДЕТАЛЕЙ ===== */
+.track-header {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--spotify-black-light);
+    flex-wrap: wrap;
+}
+
+.track-artwork {
+    flex-shrink: 0;
+}
+
+.track-cover-large {
+    width: 200px;
+    height: 200px;
+    border-radius: 16px;
+    object-fit: cover;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+.artwork-placeholder {
+    width: 200px;
+    height: 200px;
+    background: linear-gradient(135deg, #282828, #1a1a1a);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+}
+
+@media (max-width: 600px) {
+    .track-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .track-artwork {
+        margin-bottom: 1rem;
+    }
+
+    .track-cover-large, .artwork-placeholder {
+        width: 150px;
+        height: 150px;
+    }
+}
+
+/* ===== СТИЛИ ДЛЯ ТЕКСТОВ ПЕСЕН ===== */
+.lyrics-content {
+    background-color: var(--spotify-card-bg);
+    padding: 2rem;
+    border-radius: 16px;
+    font-family: monospace;
+    font-size: 1rem;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    color: var(--spotify-gray);
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+/* ===== СТРАНИЦЫ ОШИБОК ===== */
+.error-page {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.error-content h1 {
+    font-size: 6rem;
+    color: var(--spotify-green);
+    margin-bottom: 1rem;
+}
+
+.error-content h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.error-content p {
+    color: var(--spotify-gray);
+    margin-bottom: 2rem;
+}

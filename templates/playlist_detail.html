@@ -5,7 +5,11 @@
 {% block content %}
 <div class="playlist-detail">
     <div class="playlist-header">
+        {% if playlist.cover %}
+        <img src="{{ playlist.cover }}" alt="{{ playlist.title }}" class="playlist-cover-large">
+        {% else %}
         <div class="playlist-icon-large">{{ playlist.icon }}</div>
+        {% endif %}
         <div class="playlist-info-large">
             <h1>{{ playlist.title }}</h1>
             <p class="playlist-meta">{{ playlist.source }} • {{ playlist.country }} • {{ playlist.total_tracks }} треков</p>
@@ -22,6 +26,11 @@
             {% for track in playlist.tracks %}
             <div class="track-item">
                 <div class="track-number">{{ loop.index }}</div>
+                {% if track.cover %}
+                <div class="track-cover-wrapper">
+                    <img src="{{ track.cover }}" alt="{{ track.title }}" class="track-cover">
+                </div>
+                {% endif %}
                 <div class="track-info">
                     <div class="track-title">{{ track.title }}</div>
                     <div class="track-artist">{{ track.artist }}</div>
@@ -51,7 +60,7 @@
     <div class="modal-content">
         <div class="modal-header">
             <h2>🤖 Спросить Hola AI</h2>
-            <span class="close">&times;</span>
+            <span class="close" onclick="closeModal()">&times;</span>
         </div>
         <div class="modal-body">
             <div id="modalContext"></div>
@@ -103,9 +112,6 @@ async function sendQuestion() {
     responseDiv.style.display = 'block';
 
     let url = `/api/playlist/{{ playlist.id }}/ask`;
-    if (currentQuestionType === 'track') {
-        url = `/api/chat`;
-    }
 
     try {
         const res = await fetch(url, {
@@ -113,34 +119,28 @@ async function sendQuestion() {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                question: question,
-                message: question,
-                playlist_context: '{{ playlist.id }}'
-            })
+            body: JSON.stringify({ question: question })
         });
 
         const data = await res.json();
         if (data.response) {
-            responseContent.innerHTML = formatResponse(data.response);
+            responseContent.innerHTML = data.response.replace(/\n/g, '<br>');
         } else if (data.error) {
             responseContent.innerHTML = `<div class="error">❌ ${data.error}</div>`;
+        } else {
+            responseContent.innerHTML = '<div class="error">❌ Не удалось получить ответ от AI</div>';
         }
     } catch (error) {
-        responseContent.innerHTML = '<div class="error">❌ Ошибка при отправке вопроса</div>';
+        console.error('Error:', error);
+        responseContent.innerHTML = '<div class="error">❌ Ошибка при отправке вопроса. Попробуйте позже.</div>';
     }
-}
-
-function formatResponse(text) {
-    // Простое форматирование
-    return text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 }
 
 function closeModal() {
     document.getElementById('aiModal').style.display = 'none';
 }
 
-document.querySelector('.close').onclick = closeModal;
+document.querySelector('.close') && (document.querySelector('.close').onclick = closeModal);
 window.onclick = function(event) {
     const modal = document.getElementById('aiModal');
     if (event.target == modal) closeModal();

@@ -6,7 +6,11 @@
 <div class="track-detail">
     <div class="track-header">
         <div class="track-artwork">
+            {% if track.cover %}
+            <img src="{{ track.cover }}" alt="{{ track.title }}" class="track-cover-large">
+            {% else %}
             <div class="artwork-placeholder">🎵</div>
+            {% endif %}
         </div>
         <div class="track-header-info">
             <h1>{{ track.title }}</h1>
@@ -62,7 +66,7 @@
     <div class="track-lyrics">
         <h3>📝 Текст песни</h3>
         <div class="lyrics-content">
-            {{ lyrics|replace('\n', '<br>')|safe }}
+            {{ lyrics|safe }}
         </div>
     </div>
 
@@ -81,7 +85,7 @@
     <div class="modal-content">
         <div class="modal-header">
             <h2>🤖 Hola AI - анализ трека</h2>
-            <span class="close">&times;</span>
+            <span class="close" onclick="closeModal()">&times;</span>
         </div>
         <div class="modal-body">
             <div class="track-context">
@@ -92,7 +96,7 @@
                 <button class="btn btn-primary" onclick="sendQuestion()">Отправить</button>
                 <button class="btn btn-secondary" onclick="closeModal()">Отмена</button>
             </div>
-            <div id="aiResponse" style="display: none;">
+            <div id="aiResponse" class="ai-response" style="display: none;">
                 <h4>Ответ AI:</h4>
                 <div id="responseContent"></div>
             </div>
@@ -102,7 +106,7 @@
 
 <script>
 function askAboutTrack() {
-    document.getElementById('aiQuestion').value = `Расскажи подробно о треке "${track.title}". Почему он стал популярным? Что делает его особенным?`;
+    document.getElementById('aiQuestion').value = `Расскажи подробно о треке "{{ track.title }}". Почему он стал популярным? Что делает его особенным?`;
     document.getElementById('aiResponse').style.display = 'none';
     document.getElementById('aiModal').style.display = 'block';
 }
@@ -120,7 +124,7 @@ async function sendQuestion() {
     responseDiv.style.display = 'block';
     responseContent.innerHTML = '<div class="loading">⏳ Анализируем...</div>';
 
-    const trackContext = `Трек: ${track.title} - ${track.artist}. BPM: {{ analysis.bpm }}, Тональность: {{ analysis.key }}, Энергия: {{ analysis.energy_level }}, Настроение: {{ analysis.mood }}`;
+    const trackContext = `Трек: {{ track.title }} - {{ track.artist }}. BPM: {{ analysis.bpm }}, Тональность: {{ analysis.key }}, Энергия: {{ analysis.energy_level }}, Настроение: {{ analysis.mood }}`;
 
     try {
         const res = await fetch('/api/chat', {
@@ -133,8 +137,15 @@ async function sendQuestion() {
         });
 
         const data = await res.json();
-        responseContent.innerHTML = data.response.replace(/\n/g, '<br>');
+        if (data.response) {
+            responseContent.innerHTML = data.response.replace(/\n/g, '<br>');
+        } else if (data.error) {
+            responseContent.innerHTML = `<div class="error">❌ ${data.error}</div>`;
+        } else {
+            responseContent.innerHTML = '<div class="error">❌ Не удалось получить ответ от AI</div>';
+        }
     } catch (error) {
+        console.error('Error:', error);
         responseContent.innerHTML = '❌ Ошибка при получении ответа';
     }
 }
@@ -143,6 +154,9 @@ function closeModal() {
     document.getElementById('aiModal').style.display = 'none';
 }
 
-document.querySelector('.close').onclick = closeModal;
+window.onclick = function(event) {
+    const modal = document.getElementById('aiModal');
+    if (event.target == modal) closeModal();
+}
 </script>
 {% endblock %}
