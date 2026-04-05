@@ -1,45 +1,56 @@
 import os
 import logging
 from typing import List, Dict, Any
-from vkpymusic import Service
-import random
+from vkpymusic import Service, TokenReceiver
+import time
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ID реальных плейлистов из VK (нужно найти реальные ID)
+# Список стран для получения популярных треков
 PLAYLISTS = [
-    {"id": "top100_russia", "title": "Россия: Топ-100", "country": "Россия", "icon": "🇷🇺", "owner_id": "-200100",
-     "playlist_id": "100"},
-    {"id": "top100_kazakhstan", "title": "Казахстан: Топ-100", "country": "Казахстан", "icon": "🇰🇿",
-     "owner_id": "-200101", "playlist_id": "101"},
-    {"id": "top100_belarus", "title": "Беларусь: Топ-100", "country": "Беларусь", "icon": "🇧🇾", "owner_id": "-200102",
-     "playlist_id": "102"},
-    {"id": "top100_azerbaijan", "title": "Азербайджан: Топ-100", "country": "Азербайджан", "icon": "🇦🇿",
-     "owner_id": "-200103", "playlist_id": "103"},
-    {"id": "top100_armenia", "title": "Армения: Топ-100", "country": "Армения", "icon": "🇦🇲", "owner_id": "-200104",
-     "playlist_id": "104"},
-    {"id": "top100_uzbekistan", "title": "Узбекистан: Топ-100", "country": "Узбекистан", "icon": "🇺🇿",
-     "owner_id": "-200105", "playlist_id": "105"},
+    {"id": "russia", "title": "Россия: Топ-100", "country": "Россия", "icon": "🇷🇺"},
+    {"id": "kazakhstan", "title": "Казахстан: Топ-100", "country": "Казахстан", "icon": "🇰🇿"},
+    {"id": "belarus", "title": "Беларусь: Топ-100", "country": "Беларусь", "icon": "🇧🇾"},
+    {"id": "azerbaijan", "title": "Азербайджан: Топ-100", "country": "Азербайджан", "icon": "🇦🇿"},
+    {"id": "armenia", "title": "Армения: Топ-100", "country": "Армения", "icon": "🇦🇲"},
+    {"id": "uzbekistan", "title": "Узбекистан: Топ-100", "country": "Узбекистан", "icon": "🇺🇿"},
 ]
 
 
 class VKParser:
     def __init__(self):
-        self.token = os.getenv('VK_TOKEN')
         self.service = None
+        self.token = os.getenv('VK_TOKEN')
         self.init_service()
 
     def init_service(self):
         """Инициализация сервиса VK с токеном"""
         try:
             if self.token:
-                # Стандартный user-agent для VK API
-                client = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-                self.service = Service(self.token, client)
-                logger.info("✅ VK Service initialized successfully")
+                # Получаем client из конфига или используем стандартный
+                try:
+                    self.service = Service.parse_config()
+                    logger.info("✅ VK Service initialized from config")
+                except:
+                    # Если нет конфига, используем токен напрямую
+                    # Для этого нужен client - получаем его через TokenReceiver
+                    login = os.getenv('VK_LOGIN')
+                    password = os.getenv('VK_PASSWORD')
+
+                    if login and password:
+                        token_receiver = TokenReceiver(login, password)
+                        if token_receiver.auth():
+                            token_receiver.get_token()
+                            token_receiver.save_to_config()
+                            self.service = Service.parse_config()
+                            logger.info("✅ VK Service initialized with new token")
+                        else:
+                            logger.error("❌ Failed to authenticate with VK")
+                    else:
+                        logger.error("❌ No VK credentials found")
             else:
-                logger.warning("⚠️ VK_TOKEN not found")
+                logger.error("❌ VK_TOKEN not found")
         except Exception as e:
             logger.error(f"❌ Error initializing VK service: {e}")
 
@@ -53,7 +64,7 @@ class VKParser:
         if not playlist:
             return None
 
-        # Получаем реальные треки из VK
+        # Получаем реальные популярные треки через VK API
         tracks = self.get_playlist_tracks(playlist)
 
         return {
@@ -64,196 +75,175 @@ class VKParser:
         }
 
     def get_playlist_tracks(self, playlist: Dict) -> List[Dict]:
-        """Получить треки плейлиста через VK API"""
+        """Получить реальные треки через VK API метод get_popular"""
         if not self.service:
-            logger.warning("VK Service not available")
+            logger.error("❌ VK Service not available")
             return []
 
         try:
-            # Ищем популярные треки по стране
-            country_queries = {
-                "Россия": "россия топ треки",
-                "Казахстан": "казахстан топ треки",
-                "Беларусь": "беларусь топ треки",
-                "Азербайджан": "азербайджан топ треки",
-                "Армения": "армения топ треки",
-                "Узбекистан": "узбекистан топ треки",
-            }
-
-            query = country_queries.get(playlist['country'], f"{playlist['country']} топ треки")
-
-            # Используем поиск по тексту для получения популярных треков
-            songs = self.service.search_songs_by_text(query, count=20)
+            # Используем встроенный метод get_popular для получения популярных треков
+            # Это дает реальные популярные треки из VK
+            popular_songs = self.service.get_popular(count=50, offset=0)
 
             tracks = []
-            for i, song in enumerate(songs):
-                track = self._parse_song(song, i)
-                tracks.append(track)
+            for i, song in enumerate(popular_songs[:20]):  # Берем топ-20
+                # Получаем полную информацию о треке
+                track_info = self._get_complete_track_info(song)
+                if track_info:
+                    tracks.append(track_info)
 
-            logger.info(f"✅ Got {len(tracks)} tracks for {playlist['country']}")
+            logger.info(f"✅ Got {len(tracks)} real popular tracks from VK")
             return tracks
 
         except Exception as e:
-            logger.error(f"❌ Error getting tracks: {e}")
-            return self._get_fallback_tracks(playlist['country'])
+            logger.error(f"❌ Error getting popular tracks: {e}")
+            return []
 
-    def _parse_song(self, song, index: int) -> Dict:
-        """Парсинг объекта песни из VK"""
-        # Получаем обложку
-        cover = self._get_song_cover(song)
+    def _get_complete_track_info(self, song) -> Dict:
+        """Получить полную информацию о треке из объекта VK"""
+        try:
+            # Основная информация из объекта песни
+            track_id = getattr(song, 'id', None)
+            title = getattr(song, 'title', 'Unknown')
+            artist = getattr(song, 'artist', 'Unknown')
+            duration = getattr(song, 'duration', 0)
+            url = getattr(song, 'url', '')
 
-        # Получаем или генерируем BPM
-        bpm = self._get_song_bpm(song)
+            # Получаем обложку из альбома если есть
+            cover = self._get_cover_url(song)
 
-        # Получаем или генерируем тональность
-        key = self._get_song_key(song)
+            # Получаем текст песни через поиск
+            lyrics = self.get_track_lyrics(title, artist)
 
-        return {
-            'id': getattr(song, 'id', index),
-            'title': getattr(song, 'title', 'Unknown'),
-            'artist': getattr(song, 'artist', 'Unknown'),
-            'duration': getattr(song, 'duration', 180),
-            'cover': cover,
-            'bpm': bpm,
-            'key': key,
-            'popularity': 95 - (index * 2) if index < 20 else 50,
-            'url': getattr(song, 'url', ''),
-        }
+            # Получаем ID исполнителя для дополнительной информации
+            artist_id = getattr(song, 'owner_id', None)
 
-    def _get_song_cover(self, song) -> str:
-        """Получить обложку песни"""
-        # Пытаемся получить из разных атрибутов
-        if hasattr(song, 'cover'):
-            cover = getattr(song, 'cover', '')
-            if cover:
-                return cover
+            return {
+                'id': track_id,
+                'title': title,
+                'artist': artist,
+                'artist_id': artist_id,
+                'duration': duration,
+                'url': url,
+                'cover': cover,
+                'lyrics': lyrics,
+            }
 
+        except Exception as e:
+            logger.error(f"Error getting track info: {e}")
+            return None
+
+    def _get_cover_url(self, song) -> str:
+        """Получить URL обложки из объекта песни"""
+        # Пробуем получить обложку из альбома
         if hasattr(song, 'album'):
-            album = getattr(song, 'album', None)
+            album = getattr(song, 'album')
             if album and hasattr(album, 'thumb'):
-                return getattr(album, 'thumb', '')
+                thumb = album.thumb
+                if thumb and hasattr(thumb, 'url'):
+                    return thumb.url
 
-        # Стандартные обложки
-        default_covers = [
-            "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=200&h=200&fit=crop",
-            "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200&h=200&fit=crop",
-            "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop",
-            "https://images.unsplash.com/photo-1459749411171-04bf5292ce7f?w=200&h=200&fit=crop",
-        ]
-        return random.choice(default_covers)
+        # Пробуем другие возможные поля
+        if hasattr(song, 'photo'):
+            photo = getattr(song, 'photo')
+            if photo and hasattr(photo, 'url'):
+                return photo.url
 
-    def _get_song_bpm(self, song) -> int:
-        """Получить или оценить BPM песни"""
-        if hasattr(song, 'bpm') and getattr(song, 'bpm'):
-            return getattr(song, 'bpm')
+        # Если обложки нет, возвращаем заглушку
+        return "https://vk.com/images/camera_100.png"
 
-        # Оцениваем BPM на основе длительности
-        duration = getattr(song, 'duration', 180)
-        if duration < 180:
-            return random.randint(120, 150)
-        elif duration < 240:
-            return random.randint(90, 130)
-        else:
-            return random.randint(70, 110)
-
-    def _get_song_key(self, song) -> str:
-        """Получить или оценить тональность"""
-        keys = ['C major', 'D minor', 'E major', 'F# minor', 'G major', 'A minor', 'B major']
-        return random.choice(keys)
-
-    def get_track_lyrics(self, track_title: str, artist: str) -> str:
+    def get_track_lyrics(self, title: str, artist: str) -> str:
         """Получить текст песни через поиск в VK"""
         if not self.service:
-            return self._generate_lyrics(track_title, artist)
+            return self._get_info_message(title, artist)
 
         try:
             # Ищем песню с текстом
-            query = f"{track_title} {artist} текст"
-            songs = self.service.search_songs_by_text(query, count=1)
+            query = f"{artist} {title} текст"
+            songs = self.service.search_songs_by_text(query, count=3)
 
-            if songs and len(songs) > 0:
-                song = songs[0]
-                # Пытаемся получить текст
-                if hasattr(song, 'lyrics') and song.lyrics:
-                    return song.lyrics
+            for song in songs:
+                # Проверяем различные поля где может быть текст
                 if hasattr(song, 'text') and song.text:
                     return song.text
+                if hasattr(song, 'lyrics') and song.lyrics:
+                    return song.lyrics
 
-            # Если не нашли, ищем текст в интернете
-            return self._search_lyrics_online(track_title, artist)
+                # Если есть ID текста, пытаемся получить его
+                if hasattr(song, 'lyrics_id') and song.lyrics_id:
+                    lyrics = self._get_lyrics_by_id(song.lyrics_id)
+                    if lyrics:
+                        return lyrics
+
+            # Если текст не найден, возвращаем информацию
+            return self._get_info_message(title, artist)
 
         except Exception as e:
             logger.error(f"Error getting lyrics: {e}")
-            return self._generate_lyrics(track_title, artist)
+            return self._get_info_message(title, artist)
 
-    def _search_lyrics_online(self, title: str, artist: str) -> str:
-        """Поиск текста через API (можно добавить Genius API)"""
-        # Пока возвращаем сгенерированный текст
-        return self._generate_lyrics(title, artist)
+    def _get_lyrics_by_id(self, lyrics_id: int) -> str:
+        """Получить текст по ID через VK API"""
+        try:
+            # Прямой запрос к API для получения текста
+            import requests
+            url = "https://api.vk.com/method/audio.getLyrics"
+            params = {
+                'lyrics_id': lyrics_id,
+                'access_token': self.token,
+                'v': '5.131'
+            }
+            response = requests.get(url, params=params)
+            data = response.json()
 
-    def _generate_lyrics(self, title: str, artist: str) -> str:
-        """Сгенерировать текст песни"""
+            if 'response' in data and 'text' in data['response']:
+                return data['response']['text']
+        except:
+            pass
+        return None
+
+    def _get_info_message(self, title: str, artist: str) -> str:
+        """Информационное сообщение вместо текста"""
         return f"""🎵 {title} - {artist} 🎵
 
-[Куплет 1]
-Эта песня покорила сердца миллионов слушателей
-Мелодия сочетает современное звучание и глубокий смысл
+ℹ️ Информация о треке:
+• Исполнитель: {artist}
+• Название: {title}
 
-[Припев]
-Запоминающийся припев делает эту песню настоящим хитом
-{title} - это больше, чем просто музыка
+К сожалению, текст этой песни не найден в открытом доступе через VK API.
 
-[Куплет 2]
-Исполнитель вложил в эту композицию частичку души
-Текст отражает эмоции и переживания
+💡 Но вы можете:
+• Спросить Hola AI о значении и популярности этого трека
+• Найти текст в официальных источниках
+• Наслаждаться музыкой!
 
-[Аутро]
-Наслаждайтесь этой прекрасной музыкой! 🎶"""
+🎯 Примеры вопросов для Hola AI:
+- "Почему песня {title} стала популярной?"
+- "Какой жанр у исполнителя {artist}?"
+- "Проанализируй музыкальные характеристики этого трека" """
 
-    def _get_fallback_tracks(self, country: str) -> List[Dict]:
-        """Запасные треки если API не работает"""
-        fallback = []
-        for i in range(20):
-            fallback.append({
-                'id': i,
-                'title': f'Top Track {i + 1}',
-                'artist': f'Popular Artist {i + 1}',
-                'duration': 180 + i * 5,
-                'cover': f'https://picsum.photos/id/{i + 100}/200/200',
-                'bpm': 120 + (i % 40),
-                'key': ['C major', 'D minor', 'E major'][i % 3],
-                'popularity': 95 - i,
-                'url': '',
-            })
-        return fallback
+    def analyze_track(self, track: Dict) -> Dict:
+        """Анализ трека на основе реальных данных из VK"""
+        duration = track.get('duration', 180)
 
-    def get_track_analysis(self, track: Dict) -> Dict:
-        """Получить анализ трека"""
-        bpm = track.get('bpm', 120)
-
-        if bpm > 130:
-            energy = "⚡ Очень высокий"
-            mood = "🔥 Энергичный"
-        elif bpm > 100:
-            energy = "💪 Высокий"
-            mood = "💃 Танцевальный"
-        elif bpm > 70:
-            energy = "😌 Средний"
-            mood = "🎸 Спокойный"
+        # Реалистичный анализ на основе длительности и популярности
+        if duration < 180:
+            energy = "⚡ Высокая (короткий формат, TikTok-тренды)"
+            mood = "🔥 Энергичный / Виральный"
+        elif duration < 240:
+            energy = "💪 Средняя (стандартный поп-формат)"
+            mood = "💃 Танцевальный / Оптимистичный"
         else:
-            energy = "😴 Низкий"
-            mood = "🎵 Расслабляющий"
+            energy = "😌 Умеренная (глубокий трек)"
+            mood = "🎸 Спокойный / Эмоциональный"
 
         return {
             "title": track.get("title"),
             "artist": track.get("artist"),
-            "duration": f"{track.get('duration', 0) // 60}:{track.get('duration', 0) % 60:02d}",
-            "bpm": bpm,
-            "key": track.get("key", "Unknown"),
-            "popularity": track.get("popularity", 50),
+            "duration": f"{duration // 60}:{duration % 60:02d}",
+            "cover": track.get("cover"),
             "energy_level": energy,
             "mood": mood,
-            "cover": track.get("cover", ""),
         }
 
 
