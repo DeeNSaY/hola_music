@@ -1,50 +1,60 @@
 {% extends "base.html" %}
 
-{% block title %}Музыкальные чарты - Hola Music{% endblock %}
+{% block title %}Музыкальный чарт - Hola Music{% endblock %}
 
 {% block content %}
 <div class="charts-page">
     <div class="page-header">
-        <h1>🎵 Музыкальные <span class="hola-green">Чарты</span></h1>
-        <p>Топ-100 треков из разных стран по версии VK Музыка</p>
+        <h1>🎵 Топ-чарт <span class="hola-green">Яндекс Музыки</span></h1>
+        <p>Актуальные популярные треки прямо сейчас</p>
     </div>
 
-    <div class="charts-grid">
-        {% for playlist in playlists %}
-        <div class="chart-card" data-playlist-id="{{ playlist.id }}">
-            <div class="chart-card-header">
-                <div class="chart-icon">{{ playlist.icon }}</div>
-                <div class="chart-info">
-                    <h3>{{ playlist.title }}</h3>
-                    <p class="chart-country">{{ playlist.country }}</p>
+    <div class="tracks-section">
+        <div class="tracks-list">
+            {% for track in tracks %}
+            <div class="track-item">
+                <div class="track-number">{{ loop.index }}</div>
+                {% if track.cover %}
+                <div class="track-cover-wrapper">
+                    <img src="{{ track.cover }}" alt="{{ track.title }}" class="track-cover">
+                </div>
+                {% endif %}
+                <div class="track-info">
+                    <div class="track-title">{{ track.title }}</div>
+                    <div class="track-artist">{{ track.artist }}</div>
+                    <div class="track-meta">
+                        <span>🎵 BPM: {{ track.bpm }}</span>
+                        <span>🎹 Тональность: {{ track.key }}</span>
+                        <span>⭐ Популярность: {{ track.popularity }}/100</span>
+                        <span>⏱️ {{ (track.duration // 60) }}:{{ "%02d" % (track.duration % 60) }}</span>
+                    </div>
+                </div>
+                <div class="track-actions">
+                    <a href="{{ url_for('track_detail', track_index=loop.index0) }}" class="btn btn-small">
+                        🔍 Подробнее
+                    </a>
+                    <button class="btn btn-small btn-ai" onclick="askAboutTrack('{{ track.title }}', '{{ track.artist }}', '{{ track.bpm }}', '{{ track.key }}')">
+                        🤖 Спросить AI
+                    </button>
                 </div>
             </div>
-
-            <div class="chart-card-actions">
-                <a href="{{ url_for('playlist_detail', playlist_id=playlist.id) }}" class="btn btn-primary">
-                    🎵 Смотреть треки
-                </a>
-                <button class="btn btn-ai" onclick="askAboutPlaylist('{{ playlist.id }}', '{{ playlist.title }}', '{{ playlist.country }}')">
-                    🤖 Спросить AI
-                </button>
-            </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
 </div>
 
 <script>
-function askAboutPlaylist(playlistId, playlistTitle, country) {
-    // Сохраняем в sessionStorage что мы спрашиваем о плейлисте
-    const question = `Расскажи подробно о музыкальных чартах ${country}. Почему треки в ${playlistTitle} стали популярными? Какие у них BPM, тональность и другие характеристики?`;
+function askAboutTrack(trackTitle, artist, bpm, key) {
+    const question = `Расскажи подробно о треке "${trackTitle}" от ${artist}. BPM: ${bpm}, тональность: ${key}. Почему он популярен?`;
+    const context = {
+        type: 'track',
+        title: trackTitle,
+        artist: artist,
+        bpm: bpm,
+        key: key
+    };
     sessionStorage.setItem('ai_question', question);
-    sessionStorage.setItem('ai_context', JSON.stringify({
-        type: 'playlist',
-        id: playlistId,
-        title: playlistTitle,
-        country: country
-    }));
-    // Перенаправляем на страницу чата
+    sessionStorage.setItem('ai_context', JSON.stringify(context));
     window.location.href = "{{ url_for('ai_chat') }}";
 }
 </script>

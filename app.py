@@ -6,289 +6,130 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from datetime import datetime
-import re
-
 
 # Настройка логирования
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s %(name)s %(message)s',
-    handlers=[logging.StreamHandler(sys.stdout)]
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s %(message)s')
 logger = logging.getLogger(__name__)
 
-# Загрузка переменных окружения
 load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'hola-secure-key-2025')
-
-# Настройка базы данных - поддержка PostgreSQL
-database_url = os.getenv('DATABASE_URL')
-if database_url and database_url.startswith('postgres://'):
-    # Render.com использует postgres://, но SQLAlchemy требует postgresql://
-    database_url = database_url.replace('postgres://', 'postgresql://', 1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-    logger.info("Using PostgreSQL database")
-else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hola.db'
-    logger.info("Using SQLite database")
-
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///hola.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Импорт моделей
 from models import db, User, ChatHistory, UserPlaylistView
-
-# Инициализация базы данных
 db.init_app(app)
 
-# Инициализация Login Manager
 login_manager = LoginManager()
 login_manager.login_view = 'login'
-login_manager.login_message = '🎵 Пожалуйста, войдите в аккаунт, чтобы использовать Hola AI!'
-login_manager.login_message_category = 'info'
 login_manager.init_app(app)
-
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-
-# Импорт других модулей
+# Импортируем новый парсер вместо vk_parser
+from yandex_parser import yandex_parser
 from forms import RegistrationForm, LoginForm, ChatForm
-from vk_parser import vk_parser, PLAYLISTS
 from ai_rag import ai_system
 
-# Создание таблиц базы данных
+# Создание таблиц
 with app.app_context():
     db.create_all()
-    logger.info("✅ Database tables created successfully")
+    logger.info("✅ Database ready")
 
-
-# === Контекстный процессор для всех шаблонов ===
+# Контекстный процессор
 @app.context_processor
 def utility_processor():
     return dict(now=datetime.now())
 
-
-# === Главные маршруты ===
-
+# === Маршруты ===
 @app.route('/')
 def index():
-    """Главная страница"""
     return render_template('index.html')
-
 
 @app.route('/charts')
 def charts():
-    """Страница со всеми чартами"""
-    playlists = vk_parser.get_all_playlists()
-    return render_template('charts.html', playlists=playlists)
+    """Страница чарта – получаем треки из Яндекс Музыки"""
+    tracks = yandex_parser.get_chart_tracks(limit=20)
+    return render_template('charts.html', tracks=tracks)
 
-
-@app.route('/playlist/<playlist_id>')
-def playlist_detail(playlist_id):
-    """Детальная страница плейлиста"""
-    playlist_info = vk_parser.get_playlist_info(playlist_id)
-    if not playlist_info:
-        flash('Плейлист не найден', 'error')
-        return redirect(url_for('charts'))
-
-    # Сохраняем просмотр если пользователь авторизован
-    if current_user.is_authenticated:
-        try:
-            view = UserPlaylistView.query.filter_by(
-                user_id=current_user.id,
-                playlist_id=playlist_id
-            ).first()
-
-            if view:
-                view.view_count += 1
-                view.last_viewed = datetime.utcnow()
-            else:
-                view = UserPlaylistView(
-                    user_id=current_user.id,
-                    playlist_id=playlist_id,
-                    playlist_title=playlist_info['title']
-                )
-                db.session.add(view)
-            db.session.commit()
-        except Exception as e:
-            logger.error(f"Error saving playlist view: {e}")
-            db.session.rollback()
-
-    return render_template('playlist_detail.html', playlist=playlist_info)
-
-
-@app.route('/track/<playlist_id>/<int:track_index>')
-def track_detail(playlist_id, track_index):
-    """Детальная страница трека"""
-    playlist_info = vk_parser.get_playlist_info(playlist_id)
-    if not playlist_info or track_index >= len(playlist_info['tracks']):
+@app.route('/track/<int:track_index>')
+def track_detail(track_index):
+    """Детальная страница трека по индексу в чарте"""
+    tracks = yandex_parser.get_chart_tracks(limit=50)  # можно закешировать
+    if track_index >= len(tracks):
         flash('Трек не найден', 'error')
         return redirect(url_for('charts'))
-
-    track = playlist_info['tracks'][track_index]
-    lyrics = vk_parser.get_track_lyrics(track['title'], track['artist'])
-    analysis = vk_parser.get_track_analysis(track)
-
-    return render_template('track_detail.html',
-                           track=track,
-                           playlist=playlist_info,
-                           lyrics=lyrics,
-                           analysis=analysis,
-                           track_index=track_index)
-
+    track = tracks[track_index]
+    lyrics = track.get('lyrics', '')
+    analysis = yandex_parser.get_track_analysis(track)
+    return render_template('track_detail.html', track=track, lyrics=lyrics, analysis=analysis, track_index=track_index)
 
 @app.route('/ai-chat')
 @login_required
 def ai_chat():
-    """Страница чата с AI"""
     form = ChatForm()
-    chat_history = ChatHistory.query.filter_by(user_id=current_user.id) \
-        .order_by(ChatHistory.timestamp).all()
+    chat_history = ChatHistory.query.filter_by(user_id=current_user.id).order_by(ChatHistory.timestamp).all()
     return render_template('ai_chat.html', form=form, chat_history=chat_history)
-
 
 @app.route('/faq')
 def faq():
-    """FAQ страница"""
     return render_template('faq.html')
-
 
 @app.route('/profile')
 @login_required
 def profile():
-    """Профиль пользователя"""
-    chat_history = ChatHistory.query.filter_by(user_id=current_user.id) \
-        .order_by(ChatHistory.timestamp.desc()) \
-        .limit(50).all()
+    chat_history = ChatHistory.query.filter_by(user_id=current_user.id).order_by(ChatHistory.timestamp.desc()).limit(50).all()
+    viewed_playlists = []  # можно убрать или оставить для совместимости
+    return render_template('profile.html', chat_history=chat_history, viewed_playlists=viewed_playlists)
 
-    viewed_playlists = UserPlaylistView.query.filter_by(user_id=current_user.id) \
-        .order_by(UserPlaylistView.last_viewed.desc()) \
-        .limit(10).all()
-
-    return render_template('profile.html',
-                           chat_history=chat_history,
-                           viewed_playlists=viewed_playlists)
-
-
-# === API маршруты ===
-
+# === API ===
 @app.route('/api/chat', methods=['POST'])
 @login_required
 def chat_api():
-    """API для общения с AI"""
-    try:
-        data = request.get_json()
-        user_message = data.get('message', '').strip()
-        playlist_context = data.get('playlist_context')
+    data = request.get_json()
+    user_message = data.get('message', '').strip()
+    playlist_context = data.get('playlist_context')
+    if not user_message:
+        return jsonify({'error': 'Сообщение не может быть пустым'}), 400
 
-        if not user_message:
-            return jsonify({'error': 'Сообщение не может быть пустым'}), 400
+    user_chat = ChatHistory(user_id=current_user.id, role='user', content=user_message, playlist_context=playlist_context)
+    db.session.add(user_chat)
+    db.session.commit()
 
-        # Сохраняем сообщение пользователя
-        user_chat = ChatHistory(
-            user_id=current_user.id,
-            role='user',
-            content=user_message,
-            playlist_context=playlist_context
-        )
-        db.session.add(user_chat)
-        db.session.commit()
+    context = None
+    if playlist_context and playlist_context != 'general':
+        # Если нужен контекст чарта, можно передать треки
+        tracks = yandex_parser.get_chart_tracks(limit=20)
+        context = "Чарт Яндекс Музыки:\n" + "\n".join([f"{i+1}. {t['title']} - {t['artist']} (BPM: {t['bpm']}, тональность: {t['key']})" for i, t in enumerate(tracks[:10]])
 
-        # Получаем контекст плейлиста если есть
-        context = None
-        if playlist_context and playlist_context != 'general':
-            playlist_info = vk_parser.get_playlist_info(playlist_context)
-            if playlist_info:
-                context = ai_system.build_playlist_context(playlist_info)
+    recent_history = ChatHistory.query.filter_by(user_id=current_user.id).order_by(ChatHistory.timestamp.desc()).limit(10).all()
+    messages = [{'role': chat.role, 'content': chat.content} for chat in reversed(recent_history)]
 
-        # Получаем историю для контекста диалога
-        recent_history = ChatHistory.query.filter_by(user_id=current_user.id) \
-            .order_by(ChatHistory.timestamp.desc()) \
-            .limit(10).all()
-
-        messages = []
-        for chat in reversed(recent_history):
-            messages.append({
-                'role': chat.role,
-                'content': chat.content
-            })
-
-        # Получаем ответ от AI
-        ai_response = ai_system.get_ai_response(messages, context)
-
-        # Сохраняем ответ AI
-        ai_chat = ChatHistory(
-            user_id=current_user.id,
-            role='assistant',
-            content=ai_response,
-            playlist_context=playlist_context
-        )
-        db.session.add(ai_chat)
-        db.session.commit()
-
-        return jsonify({
-            'response': ai_response,
-            'timestamp': datetime.utcnow().isoformat()
-        })
-
-    except Exception as e:
-        logger.error(f"Chat API error: {e}")
-        db.session.rollback()
-        return jsonify({'error': 'Произошла ошибка при обработке запроса'}), 500
-
+    ai_response = ai_system.get_ai_response(messages, context)
+    ai_chat = ChatHistory(user_id=current_user.id, role='assistant', content=ai_response, playlist_context=playlist_context)
+    db.session.add(ai_chat)
+    db.session.commit()
+    return jsonify({'response': ai_response})
 
 @app.route('/api/playlist/<playlist_id>/ask', methods=['POST'])
 @login_required
 def ask_about_playlist(playlist_id):
-    """Задать вопрос о конкретном плейлисте"""
-    try:
-        data = request.get_json()
-        question = data.get('question', '').strip()
-
-        if not question:
-            return jsonify({'error': 'Введите вопрос'}), 400
-
-        playlist_info = vk_parser.get_playlist_info(playlist_id)
-        if not playlist_info:
-            return jsonify({'error': 'Плейлист не найден'}), 404
-
-        context = ai_system.build_playlist_context(playlist_info)
-
-        # Сохраняем вопрос
-        user_chat = ChatHistory(
-            user_id=current_user.id,
-            role='user',
-            content=f"[Плейлист: {playlist_info['title']}] {question}",
-            playlist_context=playlist_id
-        )
-        db.session.add(user_chat)
-        db.session.commit()
-
-        # Получаем ответ
-        messages = [{'role': 'user', 'content': question}]
-        ai_response = ai_system.get_ai_response(messages, context)
-
-        # Сохраняем ответ
-        ai_chat = ChatHistory(
-            user_id=current_user.id,
-            role='assistant',
-            content=ai_response,
-            playlist_context=playlist_id
-        )
-        db.session.add(ai_chat)
-        db.session.commit()
-
-        return jsonify({'response': ai_response})
-
-    except Exception as e:
-        logger.error(f"Playlist ask error: {e}")
-        db.session.rollback()
-        return jsonify({'error': 'Ошибка при обработке вопроса'}), 500
-
+    # Упростим: спрашиваем о чарте
+    data = request.get_json()
+    question = data.get('question', '')
+    tracks = yandex_parser.get_chart_tracks(limit=20)
+    context = "Чарт Яндекс Музыки:\n" + "\n".join([f"{i+1}. {t['title']} - {t['artist']} (BPM: {t['bpm']}, тональность: {t['key']})" for i, t in enumerate(tracks[:10]]])
+    user_chat = ChatHistory(user_id=current_user.id, role='user', content=f"[Чарт] {question}", playlist_context=playlist_id)
+    db.session.add(user_chat)
+    db.session.commit()
+    ai_response = ai_system.get_ai_response([{'role': 'user', 'content': question}], context)
+    ai_chat = ChatHistory(user_id=current_user.id, role='assistant', content=ai_response, playlist_context=playlist_id)
+    db.session.add(ai_chat)
+    db.session.commit()
+    return jsonify({'response': ai_response})
 
 # === Аутентификация ===
 
