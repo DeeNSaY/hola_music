@@ -1,0 +1,4 @@
+2026-04-07 18:37:59,051 | token_receiver.py(253) | token_receiver.auth(...) | [ERROR] Password bruteforce attempt!
+2026-04-07 18:44:36,486 | token_receiver.py(253) | token_receiver.auth(...) | [ERROR] Password bruteforce attempt!
+2026-04-07 18:45:22,628 | token_receiver.py(253) | token_receiver.auth(...) | [ERROR] Password bruteforce attempt!
+2026-04-07 18:48:20,415 | token_receiver.py(253) | token_receiver.auth(...) | [ERROR] Password bruteforce attempt!
