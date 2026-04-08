@@ -1,166 +1,37 @@
 {% extends "base.html" %}
-
-{% block title %}Hola Music - Лёгкий вход в топ-музыку{% endblock %}
-
+{% block title %}Hola Music - Анализ музыкальных чартов{% endblock %}
 {% block content %}
-<!-- Hero секция -->
 <section class="hero">
     <div class="hero-content">
-        <div class="hero-text">
-            <h1 class="hero-title">
-                <span class="hola-green">Hola</span>
-                <span class="wave-emoji">👋</span>
-            </h1>
-            <p class="hero-slogan">Лёгкий вход в топ-музыку</p>
-            <p class="hero-description">
-                Откройте для себя музыкальные чарты разных стран с помощью искусственного интеллекта
-            </p>
-            <div class="hero-buttons">
-                <a href="{{ url_for('charts') }}" class="btn btn-primary">🎵 Исследовать чарты</a>
-                <a href="{{ url_for('ai_chat') }}" class="btn btn-secondary">🤖 Попробовать Hola AI</a>
-            </div>
-        </div>
-        <div class="hero-stats">
-            <div class="stat">
-                <span class="stat-number">7+</span>
-                <span class="stat-label">Стран</span>
-            </div>
-            <div class="stat">
-                <span class="stat-number">100+</span>
-                <span class="stat-label">Треков</span>
-            </div>
-            <div class="stat">
-                <span class="stat-number">24/7</span>
-                <span class="stat-label">AI Помощь</span>
-            </div>
+        <h1 class="hero-title"><span class="hola-green">Hola</span> Music</h1>
+        <p class="hero-slogan">🎵 Анализ музыкальных чартов с ИИ</p>
+        <p class="hero-description">Яндекс Музыка + DeepSeek AI = полный разбор треков</p>
+        <div class="hero-buttons">
+            <a href="{{ url_for('charts') }}" class="btn btn-primary">🎧 Смотреть чарт</a>
+            <a href="{{ url_for('ai_chat') }}" class="btn btn-secondary">🤖 Спросить AI</a>
         </div>
     </div>
 </section>
 
-<!-- Как работает сервис -->
 <section class="how-it-works">
     <div class="container">
         <h2 class="section-title">Как работает <span class="hola-green">Hola Music</span>?</h2>
         <div class="steps">
-            <div class="step">
-                <div class="step-icon">1️⃣</div>
-                <h3>Выберите чарт</h3>
-                <p>Выберите страну и посмотрите топ-100 треков из VK Музыки</p>
-            </div>
-            <div class="step">
-                <div class="step-icon">2️⃣</div>
-                <h3>Анализ AI</h3>
-                <p>Наш AI анализирует BPM, тональность и популярность каждого трека</p>
-            </div>
-            <div class="step">
-                <div class="step-icon">3️⃣</div>
-                <h3>Задайте вопрос</h3>
-                <p>Спросите AI почему трек популярен или попросите рекомендации</p>
-            </div>
-            <div class="step">
-                <div class="step-icon">4️⃣</div>
-                <h3>Получите ответ</h3>
-                <p>Получите экспертный анализ и глубокое понимание музыки</p>
-            </div>
+            <div class="step"><div class="step-icon">1️⃣</div><h3>Загрузка чарта</h3><p>Получаем актуальный чарт из Яндекс Музыки</p></div>
+            <div class="step"><div class="step-icon">2️⃣</div><h3>Анализ AI</h3><p>DeepSeek анализирует BPM, тональность, текст</p></div>
+            <div class="step"><div class="step-icon">3️⃣</div><h3>Задайте вопрос</h3><p>Спросите о любом треке или тренде</p></div>
+            <div class="step"><div class="step-icon">4️⃣</div><h3>Получите ответ</h3><p>Экспертный разбор за секунды</p></div>
         </div>
     </div>
 </section>
 
-<!-- Особенности сервиса -->
 <section class="features-section">
     <div class="container">
         <h2 class="section-title">Что мы <span class="hola-green">предлагаем</span>?</h2>
         <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon">🎵</div>
-                <h3>Топ чарты</h3>
-                <p>Актуальные чарты из разных стран: Россия, Казахстан, Беларусь и другие</p>
-                <a href="{{ url_for('charts') }}" class="feature-link">Исследовать →</a>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">🤖</div>
-                <h3>Hola AI</h3>
-                <p>Нейросеть на базе DeepSeek отвечает на любые вопросы о музыке</p>
-                <a href="{{ url_for('ai_chat') }}" class="feature-link">Попробовать →</a>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">📊</div>
-                <h3>Аналитика треков</h3>
-                <p>BPM, тональность, энергия, настроение - полный разбор каждого трека</p>
-                <a href="{{ url_for('charts') }}" class="feature-link">Смотреть →</a>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">💬</div>
-                <h3>Тексты песен</h3>
-                <p>Читайте тексты популярных треков прямо на сайте</p>
-                <a href="{{ url_for('charts') }}" class="feature-link">Читать →</a>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">📈</div>
-                <h3>Популярность</h3>
-                <p>Узнайте почему трек стал хитом и какие факторы повлияли</p>
-                <a href="{{ url_for('ai_chat') }}" class="feature-link">Спросить AI →</a>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">👤</div>
-                <h3>Личный профиль</h3>
-                <p>Сохраняйте историю чатов и отслеживайте просмотренные плейлисты</p>
-                <a href="{{ url_for('profile') }}" class="feature-link">Мой профиль →</a>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Преимущества -->
-<section class="advantages">
-    <div class="container">
-        <h2 class="section-title">Почему <span class="hola-green">Hola Music</span>?</h2>
-        <div class="advantages-grid">
-            <div class="advantage">
-                <div class="advantage-icon">⚡</div>
-                <div>
-                    <h3>Быстрый анализ</h3>
-                    <p>Мгновенный AI анализ любого трека или плейлиста</p>
-                </div>
-            </div>
-            <div class="advantage">
-                <div class="advantage-icon">🌍</div>
-                <div>
-                    <h3>Международные чарты</h3>
-                    <p>Чарты из 7+ стран СНГ</p>
-                </div>
-            </div>
-            <div class="advantage">
-                <div class="advantage-icon">🎓</div>
-                <div>
-                    <h3>Образовательный подход</h3>
-                    <p>Объясняем сложные термины простым языком</p>
-                </div>
-            </div>
-            <div class="advantage">
-                <div class="advantage-icon">🆓</div>
-                <div>
-                    <h3>Полностью бесплатно</h3>
-                    <p>Все функции доступны без ограничений</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- CTA секция -->
-<section class="cta-section">
-    <div class="container">
-        <h2>Готовы погрузиться в мир музыки? 🎵</h2>
-        <p>Присоединяйтесь к Hola Music и откройте музыку по-новому</p>
-        <div class="cta-buttons">
-            <a href="{{ url_for('register') }}" class="btn btn-primary">Начать сейчас</a>
-            <a href="{{ url_for('faq') }}" class="btn btn-outline">Узнать больше</a>
+            <div class="feature-card"><div class="feature-icon">🎵</div><h3>Чарт Яндекс Музыки</h3><p>Топ треков прямо сейчас</p><a href="{{ url_for('charts') }}" class="feature-link">Смотреть →</a></div>
+            <div class="feature-card"><div class="feature-icon">🤖</div><h3>Hola AI</h3><p>Анализ на основе DeepSeek</p><a href="{{ url_for('ai_chat') }}" class="feature-link">Попробовать →</a></div>
+            <div class="feature-card"><div class="feature-icon">📊</div><h3>Полный анализ</h3><p>BPM, тональность, текст</p><a href="{{ url_for('charts') }}" class="feature-link">Смотреть →</a></div>
         </div>
     </div>
 </section>
