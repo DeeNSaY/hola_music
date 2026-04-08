@@ -44,7 +44,7 @@ class TrackCache(db.Model):
     __tablename__ = 'track_cache'
 
     id = db.Column(db.Integer, primary_key=True)
-    track_id = db.Column(db.String(255), unique=True, nullable=False)  # ID из Yandex
+    track_id = db.Column(db.String(255), unique=True, nullable=False)
     title = db.Column(db.String(255), nullable=False)
     artist = db.Column(db.String(255), nullable=False)
     duration = db.Column(db.Integer, nullable=False)
@@ -53,4 +53,12 @@ class TrackCache(db.Model):
     bpm = db.Column(db.Integer)
     key = db.Column(db.String(50))
     popularity = db.Column(db.Integer)
+
+    # ✅ НОВЫЕ ПОЛЯ
+    album = db.Column(db.String(255))
+    year = db.Column(db.Integer)
+    genre = db.Column(db.String(128))
+    explicit = db.Column(db.Boolean, default=False)
+    available = db.Column(db.Boolean, default=True)
+
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

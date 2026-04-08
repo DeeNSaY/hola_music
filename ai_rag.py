@@ -29,18 +29,26 @@ class MusicRAGSystem:
     def build_full_track_context(self, track: dict) -> str:
         """Создать полный контекст для одного трека"""
         context = f"""🎵 ИНФОРМАЦИЯ О ТРЕКЕ:
-Название: {track.get('title', 'Unknown')}
-Исполнитель: {track.get('artist', 'Unknown')}
-Длительность: {track.get('duration', 0) // 60}:{track.get('duration', 0) % 60:02d}
-BPM: {track.get('bpm', 'N/A')}
-Тональность: {track.get('key', 'N/A')}
-Популярность: {track.get('popularity', 'N/A')}/100
+    Название: {track.get('title', 'Unknown')}
+    Исполнитель: {track.get('artist', 'Unknown')}
+    Длительность: {track.get('duration', 0) // 60}:{track.get('duration', 0) % 60:02d}
+    BPM: {track.get('bpm', 'N/A')}
+    Тональность: {track.get('key', 'N/A')}
+    Популярность: {track.get('popularity', 'N/A')}/100
+    """
+        if track.get('album'):
+            context += f"Альбом: {track.get('album')}\n"
+        if track.get('year'):
+            context += f"Год выпуска: {track.get('year')}\n"
+        if track.get('genre'):
+            context += f"Жанр: {track.get('genre')}\n"
 
-📝 ТЕКСТ ПЕСНИ:
-{track.get('lyrics', 'Текст не найден')[:1000]}
+        context += f"""
+    📝 ТЕКСТ ПЕСНИ:
+    {track.get('lyrics', 'Текст не найден')[:1000]}
 
-💡 На основе этих данных ты можешь анализировать трек.
-"""
+    💡 На основе этих данных ты можешь анализировать трек.
+    """
         return context
 
     def get_ai_response(self, messages: list, tracks_context: str = None, track_context: str = None) -> str:

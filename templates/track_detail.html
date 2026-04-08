@@ -16,23 +16,49 @@
             <h1>{{ track.title }}</h1>
             <h2>{{ track.artist }}</h2>
             <div class="track-metrics">
-                <div class="metric">
-                    <span class="metric-label">BPM</span>
-                    <span class="metric-value">{{ analysis.bpm }}</span>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">Тональность</span>
-                    <span class="metric-value">{{ analysis.key }}</span>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">Длительность</span>
-                    <span class="metric-value">{{ analysis.duration }}</span>
-                </div>
-                <div class="metric">
-                    <span class="metric-label">Популярность</span>
-                    <span class="metric-value">{{ analysis.popularity }}/100</span>
-                </div>
-            </div>
+    <div class="metric">
+        <span class="metric-label">BPM</span>
+        <span class="metric-value">{{ analysis.bpm }}</span>
+    </div>
+    <div class="metric">
+        <span class="metric-label">Тональность</span>
+        <span class="metric-value">{{ analysis.key }}</span>
+    </div>
+    <div class="metric">
+        <span class="metric-label">Длительность</span>
+        <span class="metric-value">{{ analysis.duration }}</span>
+    </div>
+    <div class="metric">
+        <span class="metric-label">Популярность</span>
+        <span class="metric-value">{{ analysis.popularity }}/100</span>
+    </div>
+
+    <!-- ✅ НОВЫЕ БЛОКИ -->
+    {% if track.album %}
+    <div class="metric">
+        <span class="metric-label">Альбом</span>
+        <span class="metric-value">{{ track.album }}</span>
+    </div>
+    {% endif %}
+    {% if track.year %}
+    <div class="metric">
+        <span class="metric-label">Год</span>
+        <span class="metric-value">{{ track.year }}</span>
+    </div>
+    {% endif %}
+    {% if track.genre %}
+    <div class="metric">
+        <span class="metric-label">Жанр</span>
+        <span class="metric-value">{{ track.genre }}</span>
+    </div>
+    {% endif %}
+    {% if track.explicit %}
+    <div class="metric">
+        <span class="metric-label">🔞 Explicit</span>
+        <span class="metric-value">Да</span>
+    </div>
+    {% endif %}
+</div>
         </div>
     </div>
 
@@ -117,7 +143,11 @@ async function sendQuestion() {
     responseDiv.style.display = 'block';
     responseContent.innerHTML = '<div class="loading">⏳ Анализируем...</div>';
 
-    const trackContext = `Трек: {{ track.title }} - {{ track.artist }}. BPM: {{ analysis.bpm }}, Тональность: {{ analysis.key }}, Энергия: {{ analysis.energy_level }}, Настроение: {{ analysis.mood }}`;
+const trackContext = `Трек: {{ track.title }} - {{ track.artist }}.
+BPM: {{ analysis.bpm }}, Тональность: {{ analysis.key }}, Энергия: {{ analysis.energy_level }}, Настроение: {{ analysis.mood }}
+{% if track.album %}Альбом: {{ track.album }}{% endif %}
+{% if track.year %}Год: {{ track.year }}{% endif %}
+{% if track.genre %}Жанр: {{ track.genre }}{% endif %}`;
 
     try {
         const res = await fetch('/api/chat', {
