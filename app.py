@@ -82,7 +82,6 @@ def track_detail(track_index):
                            analysis=analysis,
                            track_index=track_index)
 
-
 @app.route('/ai-chat')
 @login_required
 def ai_chat():

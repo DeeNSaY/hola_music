@@ -6,8 +6,8 @@
 <div class="track-detail">
     <div class="track-header">
         <div class="track-artwork">
-            {% if track.cover %}
-            <img src="{{ track.cover }}" alt="{{ track.title }}" class="track-cover-large">
+            {% if track.cover and track.cover != "https://vk.com/images/camera_100.png" %}
+            <img src="{{ track.cover }}" alt="{{ track.title }}" class="track-cover-large" onerror="this.src='https://music.yandex.ru/blocks/common/default-track-cover.png'">
             {% else %}
             <div class="artwork-placeholder">🎵</div>
             {% endif %}
@@ -53,20 +53,13 @@
                     <p>{{ analysis.mood }}</p>
                 </div>
             </div>
-            <div class="analysis-card">
-                <div class="analysis-icon">🎵</div>
-                <div>
-                    <h4>Жанр</h4>
-                    <p>{{ analysis.genre_hint }}</p>
-                </div>
-            </div>
         </div>
     </div>
 
     <div class="track-lyrics">
         <h3>📝 Текст песни</h3>
         <div class="lyrics-content">
-            {{ lyrics|safe }}
+            {{ lyrics|replace('\n', '<br>')|safe }}
         </div>
     </div>
 
@@ -132,7 +125,7 @@ async function sendQuestion() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 message: `${question}\n\nКонтекст: ${trackContext}`,
-                playlist_context: '{{ playlist.id }}'
+                playlist_context: 'track'
             })
         });
 
