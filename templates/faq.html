@@ -1,27 +1,286 @@
 {% extends "base.html" %}
-{% block title %}FAQ - Hola Music{% endblock %}
+
+{% block title %}FAQ — Часто задаваемые вопросы о Hola Music{% endblock %}
+
 {% block content %}
 <div class="faq-page">
-    <div class="page-header"><h1>❓ Часто задаваемые <span class="hola-green">вопросы</span></h1></div>
+    <div class="page-header">
+        <h1>❓ Часто задаваемые <span class="hola-green">вопросы</span></h1>
+        <p>Всё, что вы хотели знать о Hola Music — в одном месте</p>
+    </div>
+
     <div class="faq-container">
-        <div class="faq-category"><h2>🎵 О сервисе</h2>
-            <div class="faq-item"><div class="faq-question" onclick="toggleFAQ(this)"><span>Что такое Hola Music?</span><span class="faq-icon">▼</span></div><div class="faq-answer"><p>Hola Music - сервис анализа музыкальных чартов с ИИ. Мы получаем актуальный чарт из Яндекс Музыки и даём полный разбор каждого трека через DeepSeek AI.</p></div></div>
-            <div class="faq-item"><div class="faq-question" onclick="toggleFAQ(this)"><span>Откуда берутся данные?</span><span class="faq-icon">▼</span></div><div class="faq-answer"><p>Данные поступают из официального API Яндекс Музыки.</p></div></div>
+        <!-- Категория: О сервисе -->
+        <div class="faq-category">
+            <h2>🎵 О сервисе Hola Music</h2>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Что такое Hola Music и для кого он?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Hola Music — это инновационный веб-сервис для анализа музыкальных чартов с использованием искусственного интеллекта. Сервис создан для:</p>
+                    <ul>
+                        <li>🎵 Музыкальных энтузиастов, которые хотят глубже понимать музыку</li>
+                        <li>📊 Исследователей музыкальных трендов</li>
+                        <li>🎓 Студентов, изучающих музыкальную индустрию</li>
+                        <li>💡 Просто любознательных людей, интересующихся музыкой</li>
+                    </ul>
+                    <p>Наша миссия — сделать анализ музыки доступным и понятным для каждого.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Откуда берутся данные о треках?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Данные поступают из официального API Яндекс Музыки. Мы получаем:</p>
+                    <ul>
+                        <li>📋 Актуальный чарт (топ треков)</li>
+                        <li>🎤 Названия треков и исполнителей</li>
+                        <li>⏱️ Длительность</li>
+                        <li>🖼️ Обложки альбомов</li>
+                        <li>📝 Тексты песен (когда доступны)</li>
+                    </ul>
+                    <p>Все данные кешируются в нашей базе данных для быстрой загрузки.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Как часто обновляется чарт?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Чарт обновляется автоматически каждый раз при загрузке страницы, но используется кеширование для ускорения работы. Вы также можете принудительно обновить данные через API (только для авторизованных пользователей). Обычно чарт Яндекс Музыки обновляется ежедневно, поэтому вы всегда видите актуальную информацию.</p>
+                </div>
+            </div>
         </div>
-        <div class="faq-category"><h2>🤖 Hola AI</h2>
-            <div class="faq-item"><div class="faq-question" onclick="toggleFAQ(this)"><span>Что умеет Hola AI?</span><span class="faq-icon">▼</span></div><div class="faq-answer"><ul><li>Анализировать популярность треков</li><li>Объяснять BPM и тональность</li><li>Рассказывать о музыкальных трендах</li></ul></div></div>
+
+        <!-- Категория: Hola AI -->
+        <div class="faq-category">
+            <h2>🤖 Hola AI — ваш музыкальный эксперт</h2>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Что умеет Hola AI?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Hola AI на базе нейросети DeepSeek умеет:</p>
+                    <ul>
+                        <li>📊 <strong>Анализировать популярность треков</strong> — объясняет, почему песня стала хитом на основе BPM, тональности, структуры</li>
+                        <li>🎵 <strong>Объяснять музыкальные термины</strong> — простым языком рассказывает о BPM, тональности, энергичности, танцевальности</li>
+                        <li>🌍 <strong>Рассказывать о трендах</strong> — анализирует текущие музыкальные тенденции</li>
+                        <li>💡 <strong>Давать рекомендации</strong> — советует похожих исполнителей и треки</li>
+                        <li>📝 <strong>Анализировать тексты</strong> — помогает понять смысл и структуру песен</li>
+                        <li>🎯 <strong>Сравнивать треки</strong> — находит сходства и различия между композициями</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Какая нейросеть используется?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Мы используем <strong>DeepSeek API</strong> — мощную нейросеть, специализирующуюся на анализе данных и генерации текста. DeepSeek обучена на огромном массиве информации, включая музыкальную аналитику, и способна давать экспертные, глубокие и при этом понятные ответы. Нейросеть работает в режиме реального времени и постоянно совершенствуется.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Как правильно задавать вопросы, чтобы получить лучший ответ?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Вот несколько советов для эффективного общения с Hola AI:</p>
+                    <ul>
+                        <li>✅ <strong>Будьте конкретны</strong> — вместо "расскажи о музыке" спросите "почему трек X популярен?"</li>
+                        <li>✅ <strong>Указывайте трек или исполнителя</strong> — AI знает текущий чарт, упоминайте названия</li>
+                        <li>✅ <strong>Задавайте уточняющие вопросы</strong> — если ответ неполный, спросите подробнее</li>
+                        <li>✅ <strong>Спрашивайте о сравнениях</strong> — "сравни трек A и трек B по энергичности"</li>
+                        <li>✅ <strong>Интересуйтесь музыкальной теорией</strong> — "как BPM влияет на восприятие песни?"</li>
+                    </ul>
+                    <p>Примеры хороших вопросов: <em>"Почему песня Espresso стала вирусной в TikTok?", "Какой BPM у трека Lose Control и почему это важно?", "Сравни тональность треков в топ-5 чарта"</em>.</p>
+                </div>
+            </div>
         </div>
-        <div class="faq-category"><h2>🔧 Технические вопросы</h2>
-            <div class="faq-item"><div class="faq-question" onclick="toggleFAQ(this)"><span>Как зарегистрироваться?</span><span class="faq-icon">▼</span></div><div class="faq-answer"><p>Нажмите "Войти" → "Зарегистрироваться" и укажите имя, email и пароль.</p></div></div>
-            <div class="faq-item"><div class="faq-question" onclick="toggleFAQ(this)"><span>Безопасны ли мои данные?</span><span class="faq-icon">▼</span></div><div class="faq-answer"><p>Да, пароли хранятся в зашифрованном виде (pbkdf2:sha256).</p></div></div>
+
+        <!-- Категория: Аккаунт и безопасность -->
+        <div class="faq-category">
+            <h2>🔐 Аккаунт и безопасность</h2>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Как зарегистрироваться?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Регистрация занимает меньше минуты:</p>
+                    <ol>
+                        <li>Нажмите кнопку <strong>"Войти"</strong> в правом верхнем углу</li>
+                        <li>Выберите <strong>"Зарегистрироваться"</strong></li>
+                        <li>Укажите <strong>имя пользователя</strong> (будет отображаться в профиле)</li>
+                        <li>Введите <strong>email</strong> (используется для входа)</li>
+                        <li>Придумайте <strong>надёжный пароль</strong> (минимум 6 символов)</li>
+                        <li>Подтвердите пароль и нажмите <strong>"Зарегистрироваться"</strong></li>
+                    </ol>
+                    <p>После регистрации вы автоматически войдёте в аккаунт и сможете пользоваться всеми функциями, включая чат с AI и сохранение истории диалогов.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Как происходит шифрование паролей?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Мы используем современные стандарты безопасности:</p>
+                    <ul>
+                        <li>🔒 <strong>Алгоритм хеширования:</strong> pbkdf2:sha256 (рекомендованный Flask стандарт)</li>
+                        <li>🧂 <strong>Соль (salt):</strong> генерируется автоматически для каждого пароля</li>
+                        <li>🔄 <strong>Итерации:</strong> множественное хеширование для усиления защиты</li>
+                        <li>🚫 <strong>Обратное преобразование невозможно:</strong> пароль нельзя восстановить из хеша</li>
+                    </ul>
+                    <p>Даже при утечке базы данных злоумышленники не смогут получить ваши пароли. Мы никогда не храним пароли в открытом виде.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Что хранится в моём профиле?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>В вашем профиле хранится:</p>
+                    <ul>
+                        <li>👤 <strong>Публичная информация:</strong> имя пользователя, email, дата регистрации</li>
+                        <li>💬 <strong>История чатов с Hola AI:</strong> все ваши диалоги (доступны только вам)</li>
+                        <li>🎵 <strong>Просмотренные треки:</strong> для персонализации рекомендаций (в разработке)</li>
+                    </ul>
+                    <p>Вы можете просмотреть всю историю в разделе <strong>"Профиль"</strong>. Данные не передаются третьим лицам и используются только для работы сервиса.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Как удалить свой аккаунт?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Для удаления аккаунта свяжитесь с нами через GitHub или email, указанный в подвале сайта. Мы удалим все ваши данные в течение 48 часов. Обратите внимание, что это действие необратимо — история чатов и сохранённые данные будут потеряны навсегда.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Категория: Технические вопросы -->
+        <div class="faq-category">
+            <h2>⚙️ Технические вопросы</h2>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>На каких устройствах работает сайт?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Сайт полностью адаптивен и отлично работает на:</p>
+                    <ul>
+                        <li>💻 <strong>Компьютерах</strong> — Windows, macOS, Linux (любые браузеры)</li>
+                        <li>📱 <strong>Смартфонах</strong> — iOS, Android (Chrome, Safari, Firefox)</li>
+                        <li>📟 <strong>Планшетах</strong> — iPad, Android-планшеты</li>
+                    </ul>
+                    <p>Рекомендуем использовать последние версии браузеров для лучшей производительности.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Какие технологии используются на сайте?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Стек технологий Hola Music:</p>
+                    <ul>
+                        <li><strong>Backend:</strong> Python 3.11, Flask, SQLAlchemy</li>
+                        <li><strong>База данных:</strong> PostgreSQL (на Render) / SQLite (локально)</li>
+                        <li><strong>Frontend:</strong> HTML5, CSS3 (Spotify-стиль), JavaScript (vanilla)</li>
+                        <li><strong>API:</strong> Yandex Music API, DeepSeek API</li>
+                        <li><strong>Деплой:</strong> Render.com, Gunicorn</li>
+                        <li><strong>Аутентификация:</strong> Flask-Login, Werkzeug Security</li>
+                    </ul>
+                    <p>Весь код открыт и доступен на <a href="https://github.com/DeeNSaY/hola_music" target="_blank">GitHub</a>.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Почему некоторые тексты песен недоступны?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Тексты песен предоставляются через API Яндекс Музыки. Если текст недоступен, это может быть связано с:</p>
+                    <ul>
+                        <li>📜 Отсутствием лицензированных текстов у правообладателя</li>
+                        <li>🔒 Ограничениями API Яндекс Музыки</li>
+                        <li>🆕 Новизной трека (текст может появиться позже)</li>
+                    </ul>
+                    <p>В таких случаях Hola AI всё равно может ответить на вопросы о треке, используя другие метаданные (BPM, тональность, популярность).</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Как я могу помочь развитию проекта?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Спасибо за интерес к Hola Music! Вы можете помочь:</p>
+                    <ul>
+                        <li>🐛 <strong>Сообщать об ошибках</strong> — создавайте Issue на GitHub</li>
+                        <li>💡 <strong>Предлагать идеи</strong> — пишите в обсуждениях GitHub</li>
+                        <li>⭐ <strong>Ставить звёзды</strong> — помогите проекту стать популярнее</li>
+                        <li>🔁 <strong>Рассказывать о нас</strong> — делитесь ссылкой с друзьями</li>
+                        <li>📝 <strong>Писать отзывы</strong> — ваше мнение очень важно</li>
+                    </ul>
+                    <p>Проект с открытым исходным кодом, и мы рады любому вкладу!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Категория: API и разработка -->
+        <div class="faq-category">
+            <h2>🛠️ Для разработчиков</h2>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFAQ(this)">
+                    <span>Есть ли открытое API?</span>
+                    <span class="faq-icon">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>Да, наш API доступен для разработчиков. Основные эндпоинты:</p>
+                    <ul>
+                        <li><code>POST /api/chat</code> — общение с Hola AI (требуется авторизация)</li>
+                        <li><code>POST /api/refresh-chart</code> — принудительное обновление чарта</li>
+                        <li><code>GET /api/chart</code> — получение текущего чарта (в планах)</li>
+                    </ul>
+                    <p>Для доступа к API необходимо зарегистрироваться и использовать токен авторизации. Подробная документация появится позже.</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
 <script>
-function toggleFAQ(el) {
-    const answer = el.parentElement.querySelector('.faq-answer');
-    const icon = el.querySelector('.faq-icon');
-    if (answer.style.display === 'none' || !answer.style.display) {
+function toggleFAQ(element) {
+    const answer = element.parentElement.querySelector('.faq-answer');
+    const icon = element.querySelector('.faq-icon');
+
+    if (answer.style.display === 'none' || answer.style.display === '') {
         answer.style.display = 'block';
         icon.style.transform = 'rotate(0deg)';
     } else {
@@ -29,6 +288,10 @@ function toggleFAQ(el) {
         icon.style.transform = 'rotate(-90deg)';
     }
 }
-document.querySelectorAll('.faq-answer').forEach(a => a.style.display = 'none');
+
+// Инициализация: скрываем все ответы
+document.querySelectorAll('.faq-answer').forEach(answer => {
+    answer.style.display = 'none';
+});
 </script>
 {% endblock %}

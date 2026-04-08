@@ -1259,3 +1259,108 @@ body {
     color: var(--spotify-gray);
     margin-bottom: 2rem;
 }
+
+/* Дополнительные стили для новых секций */
+.steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.step-card {
+    background: var(--spotify-card-bg);
+    padding: 2rem;
+    border-radius: 16px;
+    position: relative;
+    transition: transform 0.3s;
+}
+
+.step-card:hover {
+    transform: translateY(-5px);
+    background: var(--spotify-card-hover);
+}
+
+.step-number {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--spotify-green);
+    opacity: 0.3;
+}
+
+.step-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.examples-section {
+    background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+    padding: 4rem 0;
+}
+
+.examples-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.example-card {
+    background: var(--spotify-card-bg);
+    padding: 1.5rem;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.example-icon {
+    font-size: 2rem;
+}
+
+.advantages-section {
+    padding: 4rem 0;
+}
+
+.advantage-item {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--spotify-card-bg);
+    border-radius: 12px;
+}
+
+.tech-section {
+    background: var(--spotify-black);
+    padding: 4rem 0;
+}
+
+.tech-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.tech-item {
+    background: var(--spotify-card-bg);
+    padding: 0.75rem 1.5rem;
+    border-radius: 500px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+
+.tech-icon {
+    font-size: 1.25rem;
+}
+
+.btn-large {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+}
