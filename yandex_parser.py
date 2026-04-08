@@ -40,8 +40,8 @@ class YandexParser:
             return self._get_fallback_tracks()
 
         try:
-            # Получаем чарт (по умолчанию главный)
-            chart = self.client.get_chart()
+            # Правильный метод: chart() а не get_chart()
+            chart = self.client.chart()
             if not chart or not hasattr(chart, 'chart') or not chart.chart:
                 logger.warning("No chart data, using fallback")
                 return self._get_fallback_tracks()
@@ -60,7 +60,6 @@ class YandexParser:
         except Exception as e:
             logger.error(f"❌ Error getting chart: {e}")
             return self._get_fallback_tracks()
-
     def _parse_track(self, track, index: int) -> Dict:
         """Извлечь всю информацию о треке"""
         try:
