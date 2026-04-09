@@ -3,153 +3,422 @@
 {% block title %}{{ track.title }} - {{ track.artist }} | Hola Music{% endblock %}
 
 {% block content %}
-<div class="track-detail">
-    <div class="track-header">
-        <div class="track-artwork">
+<style>
+    /* Современные стили для страницы трека */
+    .track-detail-modern {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem;
+        color: #fff;
+    }
+
+    .track-hero {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2.5rem;
+        margin-bottom: 3rem;
+        align-items: center;
+    }
+
+    .track-cover-wrapper {
+        flex: 0 0 300px;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+        transition: transform 0.3s ease;
+    }
+
+    .track-cover-wrapper:hover {
+        transform: scale(1.02);
+    }
+
+    .track-cover-large {
+        width: 100%;
+        height: auto;
+        display: block;
+        aspect-ratio: 1/1;
+        object-fit: cover;
+    }
+
+    .artwork-placeholder {
+        width: 100%;
+        aspect-ratio: 1/1;
+        background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 5rem;
+        color: #1DB954;
+    }
+
+    .track-info {
+        flex: 1;
+        min-width: 280px;
+    }
+
+    .track-title {
+        font-size: 3rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+        line-height: 1.2;
+        background: linear-gradient(to right, #fff, #ccc);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+
+    .track-artist {
+        font-size: 1.8rem;
+        font-weight: 500;
+        margin-bottom: 1.5rem;
+        color: #b3b3b3;
+    }
+
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .metric-card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 1rem 1.2rem;
+        transition: all 0.2s ease;
+    }
+
+    .metric-card:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: #1DB954;
+    }
+
+    .metric-label {
+        display: block;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #b3b3b3;
+        margin-bottom: 0.3rem;
+    }
+
+    .metric-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .section-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        position: relative;
+        display: inline-block;
+    }
+
+    .section-title::after {
+        content: '';
+        position: absolute;
+        bottom: -8px;
+        left: 0;
+        width: 60%;
+        height: 3px;
+        background: #1DB954;
+        border-radius: 3px;
+    }
+
+    .analysis-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+    }
+
+    .analysis-card {
+        background: linear-gradient(145deg, #1e1e1e, #161616);
+        border-radius: 24px;
+        padding: 1.8rem 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: transform 0.2s, box-shadow 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .analysis-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6);
+        border-color: rgba(29, 185, 84, 0.3);
+    }
+
+    .analysis-icon {
+        font-size: 2.5rem;
+        background: rgba(29, 185, 84, 0.1);
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 18px;
+    }
+
+    .analysis-content h4 {
+        font-size: 1.1rem;
+        margin-bottom: 0.3rem;
+        color: #b3b3b3;
+    }
+
+    .analysis-content p {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .lyrics-container {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 24px;
+        padding: 2rem;
+        margin-bottom: 2.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+
+    .lyrics-content {
+        max-height: 400px;
+        overflow-y: auto;
+        font-family: 'SF Mono', 'Menlo', monospace;
+        font-size: 1rem;
+        line-height: 1.8;
+        white-space: pre-wrap;
+        color: #e0e0e0;
+        padding-right: 1rem;
+    }
+
+    .lyrics-content::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .lyrics-content::-webkit-scrollbar-track {
+        background: rgba(255,255,255,0.05);
+        border-radius: 10px;
+    }
+
+    .lyrics-content::-webkit-scrollbar-thumb {
+        background: #1DB954;
+        border-radius: 10px;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .btn-ai-large {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 1rem 2.5rem;
+        border-radius: 60px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.8rem;
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        transition: all 0.2s;
+        cursor: pointer;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .btn-ai-large:hover {
+        transform: scale(1.02);
+        box-shadow: 0 12px 28px rgba(102, 126, 234, 0.5);
+    }
+
+    .btn-outline-light {
+        background: transparent;
+        border: 1.5px solid rgba(255,255,255,0.3);
+        color: white;
+        padding: 1rem 2.5rem;
+        border-radius: 60px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.8rem;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .btn-outline-light:hover {
+        border-color: #fff;
+        background: rgba(255,255,255,0.05);
+    }
+
+    @media (max-width: 768px) {
+        .track-hero {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .track-title { font-size: 2.2rem; }
+        .track-artist { font-size: 1.4rem; }
+        .metrics-grid { justify-content: center; }
+        .section-title::after { left: 20%; width: 60%; }
+    }
+</style>
+
+<div class="track-detail-modern">
+    <!-- Герой-секция с обложкой и основной информацией -->
+    <div class="track-hero">
+        <div class="track-cover-wrapper">
             {% if track.cover and track.cover != "https://vk.com/images/camera_100.png" %}
             <img src="{{ track.cover }}" alt="{{ track.title }}" class="track-cover-large" onerror="this.src='https://music.yandex.ru/blocks/common/default-track-cover.png'">
             {% else %}
             <div class="artwork-placeholder">🎵</div>
             {% endif %}
         </div>
-        <div class="track-header-info">
-            <h1>{{ track.title }}</h1>
-            <h2>{{ track.artist }}</h2>
-            <div class="track-metrics">
-                <div class="metric">
+        <div class="track-info">
+            <h1 class="track-title">{{ track.title }}</h1>
+            <h2 class="track-artist">{{ track.artist }}</h2>
+            
+            <div class="metrics-grid">
+                <div class="metric-card">
                     <span class="metric-label">BPM</span>
                     <span class="metric-value">{{ analysis.bpm }}</span>
                 </div>
-                <div class="metric">
+                <div class="metric-card">
                     <span class="metric-label">Тональность</span>
                     <span class="metric-value">{{ analysis.key }}</span>
                 </div>
-                <div class="metric">
+                <div class="metric-card">
                     <span class="metric-label">Длительность</span>
                     <span class="metric-value">{{ analysis.duration }}</span>
                 </div>
-                <div class="metric">
+                <div class="metric-card">
                     <span class="metric-label">Популярность</span>
                     <span class="metric-value">{{ analysis.popularity }}/100</span>
                 </div>
+                {% if track.album %}
+                <div class="metric-card">
+                    <span class="metric-label">Альбом</span>
+                    <span class="metric-value">{{ track.album }}</span>
+                </div>
+                {% endif %}
+                {% if track.year %}
+                <div class="metric-card">
+                    <span class="metric-label">Год</span>
+                    <span class="metric-value">{{ track.year }}</span>
+                </div>
+                {% endif %}
+                {% if track.genre %}
+                <div class="metric-card">
+                    <span class="metric-label">Жанр</span>
+                    <span class="metric-value">{{ track.genre }}</span>
+                </div>
+                {% endif %}
+                {% if track.explicit %}
+                <div class="metric-card">
+                    <span class="metric-label">🔞 Explicit</span>
+                    <span class="metric-value">Да</span>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
 
-    <div class="track-analysis">
-        <h3>🎸 Анализ трека</h3>
-        <div class="analysis-grid">
-            <div class="analysis-card">
-                <div class="analysis-icon">⚡</div>
-                <div>
-                    <h4>Энергия</h4>
-                    <p>{{ analysis.energy_level }}</p>
-                </div>
-            </div>
-            <div class="analysis-card">
-                <div class="analysis-icon">🎭</div>
-                <div>
-                    <h4>Настроение</h4>
-                    <p>{{ analysis.mood }}</p>
-                </div>
+    <!-- Анализ трека -->
+    <h2 class="section-title">🎸 Анализ трека</h2>
+    <div class="analysis-grid">
+        <div class="analysis-card">
+            <div class="analysis-icon">⚡</div>
+            <div class="analysis-content">
+                <h4>Энергия</h4>
+                <p>{{ analysis.energy_level }}</p>
             </div>
         </div>
+        <div class="analysis-card">
+            <div class="analysis-icon">🎭</div>
+            <div class="analysis-content">
+                <h4>Настроение</h4>
+                <p>{{ analysis.mood }}</p>
+            </div>
+        </div>
+        {% if track.album %}
+        <div class="analysis-card">
+            <div class="analysis-icon">💿</div>
+            <div class="analysis-content">
+                <h4>Альбом</h4>
+                <p>{{ track.album }}{% if track.year %} ({{ track.year }}){% endif %}</p>
+            </div>
+        </div>
+        {% endif %}
+        {% if track.genre %}
+        <div class="analysis-card">
+            <div class="analysis-icon">🎵</div>
+            <div class="analysis-content">
+                <h4>Жанр</h4>
+                <p>{{ track.genre }}</p>
+            </div>
+        </div>
+        {% endif %}
+        {% if track.explicit %}
+        <div class="analysis-card">
+            <div class="analysis-icon">🔞</div>
+            <div class="analysis-content">
+                <h4>Explicit</h4>
+                <p>Содержит ненормативную лексику</p>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
-    <div class="track-lyrics">
-        <h3>📝 Текст песни</h3>
+    <!-- Текст песни -->
+    <h2 class="section-title">📝 Текст песни</h2>
+    <div class="lyrics-container">
         <div class="lyrics-content">
             {{ lyrics|replace('\n', '<br>')|safe }}
         </div>
     </div>
 
-    <div class="track-actions">
-        <button class="btn btn-ai" onclick="askAboutTrack()">
-            🤖 Спросить Hola AI об этом треке
+    <!-- Кнопки действий -->
+    <div class="action-buttons">
+        <button class="btn-ai-large" onclick="askAboutTrack()">
+            <span>🤖</span> Спросить Hola AI об этом треке
         </button>
-        <a href="{{ url_for('charts') }}" class="btn btn-secondary">
-            ← Вернуться к чарту
+        <a href="{{ url_for('charts') }}" class="btn-outline-light">
+            <span>←</span> Вернуться к чарту
         </a>
     </div>
 </div>
 
-<!-- Модальное окно для AI -->
-<div id="aiModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>🤖 Hola AI - анализ трека</h2>
-            <span class="close" onclick="closeModal()">&times;</span>
-        </div>
-        <div class="modal-body">
-            <div class="track-context">
-                <p><strong>{{ track.title }}</strong> - {{ track.artist }}</p>
-            </div>
-            <textarea id="aiQuestion" rows="4" placeholder="Ваш вопрос о треке..."></textarea>
-            <div class="modal-buttons">
-                <button class="btn btn-primary" onclick="sendQuestion()">Отправить</button>
-                <button class="btn btn-secondary" onclick="closeModal()">Отмена</button>
-            </div>
-            <div id="aiResponse" class="ai-response" style="display: none;">
-                <h4>Ответ AI:</h4>
-                <div id="responseContent"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
+// Функция перехода к AI с полным контекстом трека (без модального окна)
 function askAboutTrack() {
-    document.getElementById('aiQuestion').value = `Расскажи подробно о треке "{{ track.title }}". Почему он стал популярным? Что делает его особенным?`;
-    document.getElementById('aiResponse').style.display = 'none';
-    document.getElementById('aiModal').style.display = 'block';
-}
-
-async function sendQuestion() {
-    const question = document.getElementById('aiQuestion').value.trim();
-    if (!question) {
-        alert('Введите вопрос');
-        return;
-    }
-
-    const responseDiv = document.getElementById('aiResponse');
-    const responseContent = document.getElementById('responseContent');
-
-    responseDiv.style.display = 'block';
-    responseContent.innerHTML = '<div class="loading">⏳ Анализируем...</div>';
-
-    const trackContext = `Трек: {{ track.title }} - {{ track.artist }}. BPM: {{ analysis.bpm }}, Тональность: {{ analysis.key }}, Энергия: {{ analysis.energy_level }}, Настроение: {{ analysis.mood }}`;
-
-    try {
-        const res = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                message: `${question}\n\nКонтекст: ${trackContext}`,
-                playlist_context: 'track'
-            })
-        });
-
-        const data = await res.json();
-        if (data.response) {
-            responseContent.innerHTML = data.response.replace(/\n/g, '<br>');
-        } else if (data.error) {
-            responseContent.innerHTML = `<div class="error">❌ ${data.error}</div>`;
-        } else {
-            responseContent.innerHTML = '<div class="error">❌ Не удалось получить ответ от AI</div>';
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        responseContent.innerHTML = '❌ Ошибка при получении ответа';
-    }
-}
-
-function closeModal() {
-    document.getElementById('aiModal').style.display = 'none';
-}
-
-window.onclick = function(event) {
-    const modal = document.getElementById('aiModal');
-    if (event.target == modal) closeModal();
+    const context = {
+        type: 'track',
+        title: '{{ track.title }}',
+        artist: '{{ track.artist }}',
+        bpm: '{{ analysis.bpm }}',
+        key: '{{ analysis.key }}',
+        energy: '{{ analysis.energy_level }}',
+        mood: '{{ analysis.mood }}',
+        album: '{{ track.album|default("") }}',
+        year: '{{ track.year|default("") }}',
+        genre: '{{ track.genre|default("") }}',
+        explicit: '{{ track.explicit|default(false) }}'
+    };
+    
+    const question = `Расскажи подробно о треке "{{ track.title }}" от {{ track.artist }}. Почему он стал популярным? Что особенного в его звучании и тексте?`;
+    
+    sessionStorage.setItem('ai_question', question);
+    sessionStorage.setItem('ai_context', JSON.stringify(context));
+    window.location.href = "{{ url_for('ai_chat') }}";
 }
 </script>
 {% endblock %}
