@@ -5,6 +5,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from datetime import datetime
+import time
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -216,6 +217,14 @@ def not_found(e):
 def internal_error(e):
     db.session.rollback()
     return render_template('500.html'), 500
+
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    response = send_from_directory('static', filename)
+    # Кешировать на 1 год
+    response.cache_control.max_age = 31536000
+    response.cache_control.public = True
+    return response
 
 
 if __name__ == '__main__':
