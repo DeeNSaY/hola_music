@@ -12,7 +12,13 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'hola-secure-key-2025')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///hola.db')
+database_url = os.getenv('DATABASE_URL', 'sqlite:///hola.db')
+if database_url and database_url.startswith('postgres://'):
+    # Render использует postgres://, заменяем на postgresql:// и добавляем sslmode
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    if 'sslmode' not in database_url:
+        database_url += '?sslmode=require'
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 from models import db, User, ChatHistory, ChartCache, TrackCache
