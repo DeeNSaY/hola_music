@@ -62,13 +62,12 @@ def index():
 @app.route('/charts')
 def charts():
     force = request.args.get('refresh', '0') == '1'
-    tracks = get_cached_chart_tracks(limit=20, force_refresh=force)
+    tracks = get_cached_chart_tracks(limit=100, force_refresh=force)   # было 20, теперь 100
     return render_template('charts.html', tracks=tracks)
-
 
 @app.route('/track/<int:track_index>')
 def track_detail(track_index):
-    tracks = get_cached_chart_tracks(limit=50)
+    tracks = get_cached_chart_tracks(limit=100)   # тоже 100
     if track_index >= len(tracks):
         flash('Трек не найден', 'error')
         return redirect(url_for('charts'))
