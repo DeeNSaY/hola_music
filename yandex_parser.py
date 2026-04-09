@@ -4,7 +4,6 @@ import hashlib
 from typing import List, Dict, Any, Optional
 from yandex_music import Client, Track, TrackShort
 from models import db, ChartCache, TrackCache
-from sqlalchemy import select
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -29,18 +28,13 @@ class YandexParser:
             logger.error(f"❌ Yandex init error: {e}")
 
     def get_chart_tracks(self, limit: int = 20, force_refresh: bool = False) -> List[Dict]:
-        """
-        Получить чарт из кеша БД или из API.
-        Всегда возвращает полные данные о треках.
-        """
-        # 1. Пытаемся взять из кеша БД
+        """Получить чарт из кеша БД или из API."""
         if not force_refresh:
             cached = ChartCache.query.first()
             if cached and cached.tracks_data:
                 logger.info("✅ Returning chart from database cache")
                 return cached.tracks_data[:limit]
 
-        # 2. Если кеша нет или force_refresh=True - идём в API
         if not self.client:
             logger.error("❌ Yandex client not available")
             return self._get_fallback_tracks()
@@ -52,16 +46,13 @@ class YandexParser:
 
             tracks_data = []
             for idx, item in enumerate(chart.chart.tracks[:limit]):
-                track_short = item.track  # Это TrackShort
+                track_short = item.track
                 if track_short:
-                    # Получаем полный объект Track через fetch_track()
                     track_info = self._get_track_from_cache_or_api(track_short, idx)
                     if track_info:
                         tracks_data.append(track_info)
 
-            # 3. Сохраняем чарт в БД
             self._save_chart_to_db(tracks_data)
-
             logger.info(f"✅ Got {len(tracks_data)} tracks from Yandex chart")
             return tracks_data
 
@@ -70,10 +61,7 @@ class YandexParser:
             return self._get_fallback_tracks()
 
     def _get_track_from_cache_or_api(self, track_short: TrackShort, index: int) -> Optional[Dict]:
-        """
-        Получить трек: сначала из кеша БД, потом из API.
-        При необходимости выполняет fetch_track() для получения полных данных.
-        """
+        """Получить трек: сначала из кеша БД, потом из API."""
         track_id = str(getattr(track_short, 'id', f"temp_{index}"))
 
         # Проверяем кеш треков
@@ -97,44 +85,38 @@ class YandexParser:
                 'available': cached_track.available,
             }
 
-        # Нет в кеше - получаем полный трек из API
+        # Получаем полный трек через API клиента
         try:
-            # КЛЮЧЕВОЙ МОМЕНТ: получаем полный объект Track
-            full_track = track_short.fetch_track()
+            # Правильный способ: запросить трек по ID через клиент
+            full_track = self.client.tracks([track_id])[0]
             track_info = self._parse_track_full(full_track, index)
             if track_info:
                 self._save_track_to_db(track_info)
             return track_info
         except Exception as e:
             logger.error(f"Failed to fetch full track {track_id}: {e}")
-            # Fallback: используем ограниченные данные из TrackShort
             return self._parse_track_short_fallback(track_short, index)
 
     def _parse_track_full(self, track: Track, index: int) -> Optional[Dict]:
-        """Парсинг ПОЛНОГО объекта Track (полученного через fetch_track())"""
+        """Парсинг ПОЛНОГО объекта Track."""
         try:
             track_id = str(track.id)
             title = track.title or 'Unknown'
 
-            # Артисты
             artists = "Unknown"
             if track.artists:
                 artists = ", ".join([a.name for a in track.artists])
 
-            # Длительность в секундах
             duration = track.duration_ms // 1000 if track.duration_ms else 0
 
-            # Обложка
             cover = None
             if track.cover_uri:
                 cover = f"https://{track.cover_uri.replace('%%', '400x400')}"
             else:
                 cover = "https://music.yandex.ru/blocks/common/default-track-cover.png"
 
-            # Текст песни (получаем через отдельный метод)
             lyrics = self._get_lyrics_full(track)
 
-            # Альбом, год, жанр и т.д.
             album_name = None
             year = None
             genre = None
@@ -147,9 +129,10 @@ class YandexParser:
             explicit = getattr(track, 'explicit', False)
             available = getattr(track, 'available', True)
 
-            # Генерация BPM и тональности (API их не даёт)
             bpm = self._generate_bpm(track_id, duration)
             key = self._generate_key(track_id)
+
+            logger.info(f"Parsed track: {title} | album: {album_name} | year: {year} | genre: {genre}")
 
             return {
                 'id': track_id,
@@ -160,7 +143,7 @@ class YandexParser:
                 'lyrics': lyrics,
                 'bpm': bpm,
                 'key': key,
-                'popularity': max(50, 100 - index * 2),  # Приблизительный рейтинг
+                'popularity': max(50, 100 - index * 2),
                 'album': album_name,
                 'year': year,
                 'genre': genre,
@@ -172,13 +155,12 @@ class YandexParser:
             return None
 
     def _parse_track_short_fallback(self, track_short: TrackShort, index: int) -> Dict:
-        """Fallback-парсинг, если fetch_track() не удался (используем только TrackShort)"""
         track_id = str(getattr(track_short, 'id', f"temp_{index}"))
         title = getattr(track_short, 'title', 'Unknown')
         artists = "Unknown"
         if hasattr(track_short, 'artists') and track_short.artists:
             artists = ", ".join([a.name for a in track_short.artists])
-        duration = 0  # В TrackShort длительность может отсутствовать
+        duration = 0
 
         return {
             'id': track_id,
@@ -198,36 +180,25 @@ class YandexParser:
         }
 
     def _get_lyrics_full(self, track: Track) -> str:
-        """
-        Получение текста песни через Yandex API.
-        Учитывает, что может потребоваться вызов fetch_lyrics().
-        """
         try:
-            # Получаем объект Lyrics
+            # Получаем объект Lyrics, затем текст
             lyrics_obj = track.get_lyrics()
-            if not lyrics_obj:
-                return self._no_lyrics_message(track.title, track.artists[0].name if track.artists else 'Unknown')
-
-            # В зависимости от реализации API может потребоваться явный fetch
-            if hasattr(lyrics_obj, 'fetch_lyrics'):
-                lyrics_text = lyrics_obj.fetch_lyrics()
-                if lyrics_text:
-                    return lyrics_text
-            elif hasattr(lyrics_obj, 'text') and lyrics_obj.text:
-                return lyrics_obj.text
-
+            if lyrics_obj:
+                if hasattr(lyrics_obj, 'fetch_lyrics'):
+                    text = lyrics_obj.fetch_lyrics()
+                    if text:
+                        return text
+                elif hasattr(lyrics_obj, 'text') and lyrics_obj.text:
+                    return lyrics_obj.text
             return self._no_lyrics_message(track.title, track.artists[0].name if track.artists else 'Unknown')
         except Exception as e:
             logger.debug(f"Lyrics not available for {track.title}: {e}")
             return self._no_lyrics_message(track.title, track.artists[0].name if track.artists else 'Unknown')
 
     def _save_chart_to_db(self, tracks: List[Dict]) -> None:
-        """Сохранить чарт в базу данных (кеш)"""
         try:
             with self.app.app_context() if self.app else db.session.no_autoflush:
-                # Удаляем старый кеш
                 ChartCache.query.delete()
-                # Сохраняем новый
                 new_cache = ChartCache(tracks_data=tracks)
                 db.session.add(new_cache)
                 db.session.commit()
@@ -237,13 +208,10 @@ class YandexParser:
             logger.error(f"Error saving chart to DB: {e}")
 
     def _save_track_to_db(self, track_info: Dict) -> None:
-        """Сохранить полную информацию о треке в кеш БД"""
         try:
             with self.app.app_context() if self.app else db.session.no_autoflush:
-                # Проверяем, нет ли уже такого трека
                 existing = TrackCache.query.filter_by(track_id=track_info['id']).first()
                 if existing:
-                    # Обновляем существующую запись
                     for key, value in track_info.items():
                         if hasattr(existing, key):
                             setattr(existing, key, value)
@@ -272,7 +240,6 @@ class YandexParser:
             logger.error(f"Error saving track to DB: {e}")
 
     def _no_lyrics_message(self, title: str, artist: str) -> str:
-        """Сообщение при отсутствии текста песни"""
         return f"""🎵 {title} - {artist} 🎵
 
 Текст этой песни временно недоступен через Яндекс Музыку.
@@ -284,7 +251,6 @@ class YandexParser:
 """
 
     def _generate_bpm(self, track_id: str, duration: int) -> int:
-        """Генерация псевдо-BPM на основе ID трека и длительности"""
         hash_val = int(hashlib.md5(str(track_id).encode()).hexdigest()[:4], 16)
         if duration < 180:
             base = 120
@@ -295,14 +261,12 @@ class YandexParser:
         return base + (hash_val % 40)
 
     def _generate_key(self, track_id: str) -> str:
-        """Генерация псевдо-тональности на основе ID трека"""
         keys = ['C major', 'G major', 'D major', 'A major', 'E major',
                 'F major', 'A minor', 'E minor', 'D minor', 'B minor']
         hash_val = int(hashlib.md5(str(track_id).encode()).hexdigest()[:4], 16)
         return keys[hash_val % len(keys)]
 
     def _get_fallback_tracks(self) -> List[Dict]:
-        """Запасные треки, если API недоступен"""
         fallback = [
             {"title": "Birds of a Feather", "artist": "Billie Eilish", "duration": 210, "bpm": 118, "key": "C major"},
             {"title": "Beautiful Things", "artist": "Benson Boone", "duration": 195, "bpm": 120, "key": "D minor"},
@@ -331,7 +295,6 @@ class YandexParser:
         return tracks
 
     def get_track_analysis(self, track: Dict) -> Dict:
-        """Анализ трека (энергия, настроение) на основе BPM"""
         bpm = track.get('bpm', 100)
         if bpm > 120:
             energy = "⚡ Высокая"
@@ -364,5 +327,4 @@ class YandexParser:
         }
 
 
-# Создание экземпляра парсера (желательно в контексте приложения)
 yandex_parser = YandexParser()

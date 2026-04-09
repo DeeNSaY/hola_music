@@ -63,33 +63,57 @@ const chatMessages = document.getElementById('chatMessages');
 const userInput = document.getElementById('userInput');
 const sendBtn = document.getElementById('sendBtn');
 
-// Автоматически отправляем сохраненный вопрос из sessionStorage
+// Улучшенное форматирование сообщений
+function formatMessage(content) {
+    // Экранируем HTML (кроме разрешённых тегов)
+    let escaped = content
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+    // Жирный текст **жирный**
+    escaped = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    // Курсив *курсив*
+    escaped = escaped.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    // Переносы строк
+    escaped = escaped.replace(/\n/g, '<br>');
+    // Простые маркированные списки (строки, начинающиеся с - или *)
+    escaped = escaped.replace(/^[*-] (.+)$/gm, '• $1');
+
+    return escaped;
+}
+
+// Автоматическая отправка сохранённого вопроса из sessionStorage
 document.addEventListener('DOMContentLoaded', function() {
     const savedQuestion = sessionStorage.getItem('ai_question');
     const savedContext = sessionStorage.getItem('ai_context');
 
     if (savedQuestion && !sessionStorage.getItem('question_sent')) {
-        // Отмечаем что вопрос уже отправлен
         sessionStorage.setItem('question_sent', 'true');
 
-        // Добавляем контекст к вопросу если есть
         let finalQuestion = savedQuestion;
         if (savedContext) {
-            const context = JSON.parse(savedContext);
-            if (context.type === 'playlist') {
-                finalQuestion = `[Контекст: плейлист "${context.title}" из ${context.country}]\n\n${savedQuestion}`;
-            } else if (context.type === 'track') {
-                finalQuestion = `[Контекст: трек "${context.title}" - ${context.artist}, BPM: ${context.bpm}, тональность: ${context.key}]\n\n${savedQuestion}`;
+            try {
+                const context = JSON.parse(savedContext);
+                if (context.type === 'playlist') {
+                    finalQuestion = `[Контекст: плейлист "${context.title}" из ${context.country}]\n\n${savedQuestion}`;
+                } else if (context.type === 'track') {
+                    // Формируем полное описание трека для контекста
+                    let trackInfo = `Трек: "${context.title}" - ${context.artist}. BPM: ${context.bpm}, Тональность: ${context.key}, Энергия: ${context.energy}, Настроение: ${context.mood}`;
+                    if (context.album) trackInfo += `, Альбом: ${context.album}`;
+                    if (context.year) trackInfo += ` (${context.year})`;
+                    if (context.genre) trackInfo += `, Жанр: ${context.genre}`;
+                    finalQuestion = `[Контекст: ${trackInfo}]\n\n${savedQuestion}`;
+                }
+            } catch(e) {
+                console.warn('Ошибка парсинга контекста', e);
             }
         }
 
-        // Устанавливаем вопрос в поле ввода
         userInput.value = finalQuestion;
 
-        // Отправляем вопрос через секунду (чтобы страница полностью загрузилась)
         setTimeout(() => {
             sendMessage();
-            // Очищаем sessionStorage после отправки
             setTimeout(() => {
                 sessionStorage.removeItem('ai_question');
                 sessionStorage.removeItem('ai_context');
@@ -110,7 +134,7 @@ function addMessage(content, isUser) {
 
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
-    contentDiv.innerHTML = formatMessage(content);
+    contentDiv.innerHTML = isUser ? formatMessage(content) : formatMessage(content);
 
     const timeDiv = document.createElement('div');
     timeDiv.className = 'message-time';
@@ -120,12 +144,6 @@ function addMessage(content, isUser) {
     messageDiv.appendChild(timeDiv);
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-function formatMessage(content) {
-    content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    content = content.replace(/\n/g, '<br>');
-    return content;
 }
 
 function showTypingIndicator() {

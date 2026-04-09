@@ -61,7 +61,8 @@ def index():
 
 @app.route('/charts')
 def charts():
-    tracks = get_cached_chart_tracks(limit=20)
+    force = request.args.get('refresh', '0') == '1'
+    tracks = get_cached_chart_tracks(limit=20, force_refresh=force)
     return render_template('charts.html', tracks=tracks)
 
 
