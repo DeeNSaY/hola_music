@@ -15,7 +15,6 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'hola-secure-key-2025')
 database_url = os.getenv('DATABASE_URL', 'sqlite:///hola.db')
 if database_url and database_url.startswith('postgres://'):
-    # Render использует postgres://, заменяем на postgresql:// и добавляем sslmode
     database_url = database_url.replace('postgres://', 'postgresql://', 1)
     if 'sslmode' not in database_url:
         database_url += '?sslmode=require'
@@ -40,10 +39,8 @@ from yandex_parser import yandex_parser
 from forms import RegistrationForm, LoginForm, ChatForm
 from ai_rag import ai_system
 
-# Создание таблиц
 with app.app_context():
     db.create_all()
-    # Привязываем парсер к app для доступа к БД
     yandex_parser.app = app
     logger.info("✅ Database ready")
 
@@ -53,14 +50,12 @@ def utility_processor():
     return dict(now=datetime.now())
 
 
-# === Кешированный доступ к чарту ===
 def get_cached_chart_tracks(limit=20, force_refresh=False):
     """Получить чарт из кеша БД или API"""
     with app.app_context():
         return yandex_parser.get_chart_tracks(limit=limit, force_refresh=force_refresh)
 
 
-# === Маршруты ===
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -69,12 +64,12 @@ def index():
 @app.route('/charts')
 def charts():
     force = request.args.get('refresh', '0') == '1'
-    tracks = get_cached_chart_tracks(limit=100, force_refresh=force)   # было 20, теперь 100
+    tracks = get_cached_chart_tracks(limit=100, force_refresh=force)
     return render_template('charts.html', tracks=tracks)
 
 @app.route('/track/<int:track_index>')
 def track_detail(track_index):
-    tracks = get_cached_chart_tracks(limit=100)   # тоже 100
+    tracks = get_cached_chart_tracks(limit=100)
     if track_index >= len(tracks):
         flash('Трек не найден', 'error')
         return redirect(url_for('charts'))
@@ -120,27 +115,22 @@ def chat_api():
     if not user_message:
         return jsonify({'error': 'Введите сообщение'}), 400
 
-    # Сохраняем сообщение пользователя
     user_chat = ChatHistory(user_id=current_user.id, role='user', content=user_message)
     db.session.add(user_chat)
     db.session.commit()
 
-    # Определяем тип вопроса и формируем контекст
     tracks = get_cached_chart_tracks(limit=10)
     tracks_context = ai_system.build_tracks_context(tracks)
 
-    # Проверяем, спрашивают ли о конкретном треке
     track_context = None
     for track in tracks:
         if track.get('title').lower() in user_message.lower() or track.get('artist').lower() in user_message.lower():
             track_context = ai_system.build_full_track_context(track)
             break
 
-    # История диалога
     recent = ChatHistory.query.filter_by(user_id=current_user.id).order_by(ChatHistory.timestamp.desc()).limit(6).all()
     messages = [{'role': c.role, 'content': c.content} for c in reversed(recent)]
 
-    # Ответ AI
     ai_response = ai_system.get_ai_response(messages, tracks_context, track_context)
 
     ai_chat = ChatHistory(user_id=current_user.id, role='assistant', content=ai_response)
@@ -158,7 +148,6 @@ def refresh_chart():
     return jsonify({'status': 'ok', 'count': len(tracks)})
 
 
-# === Аутентификация ===
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
@@ -221,7 +210,6 @@ def internal_error(e):
 @app.route('/static/<path:filename>')
 def static_files(filename):
     response = send_from_directory('static', filename)
-    # Кешировать на 1 год
     response.cache_control.max_age = 31536000
     response.cache_control.public = True
     return response

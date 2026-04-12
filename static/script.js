@@ -24,15 +24,33 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Мобильное меню
+    // ===== Мобильное меню =====
     const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-    if (mobileMenuBtn) {
-        mobileMenuBtn.addEventListener('click', function() {
-            const navLinks = document.querySelector('.nav-links');
-            if (navLinks) {
-                navLinks.classList.toggle('show');
+    const navLinks = document.querySelector('.nav-links');
+
+    if (mobileMenuBtn && navLinks) {
+        // Открытие/закрытие меню по клику на кнопку
+        mobileMenuBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            navLinks.classList.toggle('show');
+        });
+
+        // Закрытие меню при клике на любую ссылку внутри
+        const navLinkItems = navLinks.querySelectorAll('.nav-link');
+        navLinkItems.forEach(link => {
+            link.addEventListener('click', function() {
+                navLinks.classList.remove('show');
+            });
+        });
+
+        // Закрытие меню при клике вне области навигации
+        document.addEventListener('click', function(e) {
+            if (!navLinks.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+                navLinks.classList.remove('show');
             }
         });
+
+        // Предотвращение закрытия при клике внутри самого меню (уже обработано ссылками)
     }
 
     // Плавная прокрутка для якорных ссылок
@@ -46,21 +64,18 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Инициализация анимаций появления - ИСПРАВЛЕНО
+    // Инициализация анимаций появления
     initScrollAnimations();
 });
 
 // Функция инициализации анимаций при скролле
 function initScrollAnimations() {
     const elements = document.querySelectorAll('.feature-card, .step, .chart-card, .advantage');
-
-    // Сразу показываем все элементы, чтобы они не исчезали
     elements.forEach(el => {
         el.style.opacity = '1';
         el.style.transform = 'translateY(0)';
     });
 
-    // Настройка Intersection Observer для дополнительных эффектов
     const observerOptions = {
         threshold: 0.1,
         rootMargin: '0px 0px -50px 0px'
@@ -75,7 +90,6 @@ function initScrollAnimations() {
         });
     }, observerOptions);
 
-    // Наблюдаем только за элементами с классом animate-on-scroll
     document.querySelectorAll('.animate-on-scroll').forEach(el => {
         el.style.opacity = '0';
         el.style.transform = 'translateY(20px)';
@@ -107,12 +121,10 @@ function debounce(func, wait) {
 // ===== Обработка ошибок на клиенте =====
 window.addEventListener('error', function(e) {
     console.error('Client Error:', e.error);
-    // Не показываем ошибки пользователю, только в консоль
 });
 
 // ===== Прогресс загрузки =====
 function showLoading() {
-    // Удаляем существующий лоадер если есть
     const existingLoader = document.querySelector('.loading-overlay');
     if (existingLoader) existingLoader.remove();
 
@@ -165,7 +177,6 @@ function filterPlaylists(searchTerm) {
     playlists.forEach(playlist => {
         const title = playlist.querySelector('h3')?.textContent.toLowerCase() || '';
         const country = playlist.querySelector('.chart-country')?.textContent.toLowerCase() || '';
-
         if (title.includes(term) || country.includes(term)) {
             playlist.style.display = '';
         } else {
@@ -177,7 +188,6 @@ function filterPlaylists(searchTerm) {
 // ===== Добавление в избранное =====
 function addToFavorites(playlistId, playlistTitle) {
     let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-
     if (!favorites.find(f => f.id === playlistId)) {
         favorites.push({ id: playlistId, title: playlistTitle });
         localStorage.setItem('favorites', JSON.stringify(favorites));
@@ -191,7 +201,6 @@ function addToFavorites(playlistId, playlistTitle) {
 function loadFavorites() {
     const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
     const container = document.getElementById('favoritesContainer');
-
     if (container && favorites.length > 0) {
         container.innerHTML = favorites.map(fav => `
             <div class="favorite-item">
@@ -206,7 +215,6 @@ function loadFavorites() {
 function exportChat() {
     const messages = document.querySelectorAll('.message');
     let chatText = 'Hola Music Chat Export\n\n';
-
     messages.forEach(msg => {
         const role = msg.classList.contains('user-message') ? 'User' : 'Hola AI';
         const content = msg.querySelector('.message-content')?.textContent || '';
@@ -220,7 +228,6 @@ function exportChat() {
     a.download = `hola_chat_${new Date().toISOString()}.txt`;
     a.click();
     URL.revokeObjectURL(url);
-
     showNotification('Чат экспортирован!', 'success');
 }
 

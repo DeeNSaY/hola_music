@@ -1029,6 +1029,18 @@ body {
 @media (max-width: 768px) {
     .nav-links {
         display: none;
+        flex-direction: column;
+        width: 100%;
+        background-color: var(--spotify-black);
+        position: absolute;
+        top: 70px; /* высота шапки */
+        left: 0;
+        padding: 1rem;
+        border-top: 1px solid var(--spotify-black-light);
+    }
+
+    .nav-links.show {
+        display: flex;
     }
 
     .mobile-menu-btn {

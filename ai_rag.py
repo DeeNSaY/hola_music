@@ -56,7 +56,6 @@ BPM: {track.get('bpm', 'N/A')}
         if not self.api_key:
             return "⚠️ API ключ DeepSeek не настроен."
 
-        # Улучшенный системный промпт для более глубоких ответов
         system_prompt = """Ты — Hola AI, профессиональный музыкальный аналитик с глубокими знаниями теории музыки, истории чартов и современных трендов.
 
 ОТВЕЧАЙ КРАТКО И ПО ДЕЛУ
@@ -81,14 +80,14 @@ BPM: {track.get('bpm', 'N/A')}
             system_prompt += f"\n\n📀 КОНТЕКСТ ТРЕКА:\n{track_context}"
 
         full_messages = [{"role": "system", "content": system_prompt}]
-        full_messages.extend(messages[-5:])  # последние 5 сообщений
+        full_messages.extend(messages[-5:])
 
         headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
         data = {
-            "model": "deepseek-chat",       # самая актуальная и умная модель
+            "model": "deepseek-chat",
             "messages": full_messages,
             "temperature": 0.7,
-            "max_tokens": 1000,             # увеличено для более развёрнутых ответов
+            "max_tokens": 1000,
             "stream": False
         }
 

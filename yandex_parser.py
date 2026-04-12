@@ -64,7 +64,6 @@ class YandexParser:
         """Получить трек: сначала из кеша БД, потом из API."""
         track_id = str(getattr(track_short, 'id', f"temp_{index}"))
 
-        # Проверяем кеш треков
         cached_track = TrackCache.query.filter_by(track_id=track_id).first()
         if cached_track:
             logger.debug(f"Track {track_id} found in cache")
@@ -85,9 +84,7 @@ class YandexParser:
                 'available': cached_track.available,
             }
 
-        # Получаем полный трек через API клиента
         try:
-            # Правильный способ: запросить трек по ID через клиент
             full_track = self.client.tracks([track_id])[0]
             track_info = self._parse_track_full(full_track, index)
             if track_info:
@@ -181,7 +178,6 @@ class YandexParser:
 
     def _get_lyrics_full(self, track: Track) -> str:
         try:
-            # Получаем объект Lyrics, затем текст
             lyrics_obj = track.get_lyrics()
             if lyrics_obj:
                 if hasattr(lyrics_obj, 'fetch_lyrics'):

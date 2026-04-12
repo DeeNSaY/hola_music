@@ -53,8 +53,6 @@ class TrackCache(db.Model):
     bpm = db.Column(db.Integer)
     key = db.Column(db.String(50))
     popularity = db.Column(db.Integer)
-
-    # ✅ НОВЫЕ ПОЛЯ
     album = db.Column(db.String(255))
     year = db.Column(db.Integer)
     genre = db.Column(db.String(128))
