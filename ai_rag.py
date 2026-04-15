@@ -52,57 +52,57 @@ BPM: {track.get('bpm', 'N/A')}
         return context
 
     def get_ai_response(self, messages: list, tracks_context: str = None, track_context: str = None) -> str:
-    """Получить ответ от DeepSeek с RAG контекстом (с повторными попытками)"""
-    if not self.api_key:
-        return "⚠️ API ключ DeepSeek не настроен."
+        """Получить ответ от DeepSeek с RAG контекстом (с повторными попытками)"""
+        if not self.api_key:
+            return "⚠️ API ключ DeepSeek не настроен."
 
-    system_prompt = """Ты — Hola AI, профессиональный музыкальный аналитик с глубокими знаниями теории музыки, истории чартов и современных трендов. ОТВЕЧАЙ КРАТКО И ПО ДЕЛУ Твои возможности: - Подробно анализировать, почему трек стал популярным (BPM, тональность, текст, контекст релиза) - Объяснять музыкальные характеристики простым языком с интересными фактами - Сравнивать треки по энергии, настроению, жанровым особенностям - Давать персонализированные рекомендации на основе чарта Правила ответов: - Отвечай на русском языке - Будь дружелюбным, но профессиональным - Используй эмодзи для визуального выделения - Структурируй ответы с помощью **жирного шрифта** и списков - Если данных недостаточно, честно скажи об этом
+        system_prompt = """Ты — Hola AI, профессиональный музыкальный аналитик с глубокими знаниями теории музыки, истории чартов и современных трендов. ОТВЕЧАЙ КРАТКО И ПО ДЕЛУ Твои возможности: - Подробно анализировать, почему трек стал популярным (BPM, тональность, текст, контекст релиза) - Объяснять музыкальные характеристики простым языком с интересными фактами - Сравнивать треки по энергии, настроению, жанровым особенностям - Давать персонализированные рекомендации на основе чарта Правила ответов: - Отвечай на русском языке - Будь дружелюбным, но профессиональным - Используй эмодзи для визуального выделения - Структурируй ответы с помощью **жирного шрифта** и списков - Если данных недостаточно, честно скажи об этом
 """
 
-    if tracks_context:
-        system_prompt += f"\n\n📊 КОНТЕКСТ ЧАРТА:\n{tracks_context}"
-    if track_context:
-        system_prompt += f"\n\n📀 КОНТЕКСТ ТРЕКА:\n{track_context}"
+        if tracks_context:
+            system_prompt += f"\n\n📊 КОНТЕКСТ ЧАРТА:\n{tracks_context}"
+        if track_context:
+            system_prompt += f"\n\n📀 КОНТЕКСТ ТРЕКА:\n{track_context}"
 
-    full_messages = [{"role": "system", "content": system_prompt}]
-    full_messages.extend(messages[-5:])
+        full_messages = [{"role": "system", "content": system_prompt}]
+        full_messages.extend(messages[-5:])
 
-    headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
-    data = {
-        "model": "deepseek-chat",
-        "messages": full_messages,
-        "temperature": 0.7,
-        "max_tokens": 500,
-        "stream": False
-    }
+        headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
+        data = {
+            "model": "deepseek-chat",
+            "messages": full_messages,
+            "temperature": 0.7,
+            "max_tokens": 500,
+            "stream": False
+        }
 
-    # Настройки повторных попыток
-    max_retries = 3
-    timeout_seconds = 90  # увеличенный таймаут
+        # Настройки повторных попыток
+        max_retries = 3
+        timeout_seconds = 90
 
-    for attempt in range(1, max_retries + 1):
-        try:
-            response = requests.post(
-                DEEPSEEK_API_URL,
-                headers=headers,
-                json=data,
-                timeout=timeout_seconds
-            )
-            response.raise_for_status()
-            return response.json()['choices'][0]['message']['content']
-        except requests.exceptions.Timeout:
-            logger.warning(f"DeepSeek timeout, attempt {attempt}/{max_retries}")
-            if attempt == max_retries:
-                return "⚠️ Сервер AI перегружен. Попробуйте позже."
-        except requests.exceptions.RequestException as e:
-            logger.error(f"AI request error (attempt {attempt}): {e}")
-            if attempt == max_retries:
-                return f"❌ Ошибка соединения с AI: {str(e)[:50]}"
-        except Exception as e:
-            logger.error(f"Unexpected AI error: {e}")
-            return f"❌ Ошибка: {str(e)[:50]}"
+        for attempt in range(1, max_retries + 1):
+            try:
+                response = requests.post(
+                    DEEPSEEK_API_URL,
+                    headers=headers,
+                    json=data,
+                    timeout=timeout_seconds
+                )
+                response.raise_for_status()
+                return response.json()['choices'][0]['message']['content']
+            except requests.exceptions.Timeout:
+                logger.warning(f"DeepSeek timeout, attempt {attempt}/{max_retries}")
+                if attempt == max_retries:
+                    return "⚠️ Сервер AI перегружен. Попробуйте позже."
+            except requests.exceptions.RequestException as e:
+                logger.error(f"AI request error (attempt {attempt}): {e}")
+                if attempt == max_retries:
+                    return f"❌ Ошибка соединения с AI: {str(e)[:50]}"
+            except Exception as e:
+                logger.error(f"Unexpected AI error: {e}")
+                return f"❌ Ошибка: {str(e)[:50]}"
 
-    return "⚠️ Не удалось получить ответ от AI."
+        return "⚠️ Не удалось получить ответ от AI."
 
 
 ai_system = MusicRAGSystem()
